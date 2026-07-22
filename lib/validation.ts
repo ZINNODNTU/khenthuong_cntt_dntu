@@ -5,6 +5,28 @@ const branchCodeSchema = z
     .min(2)
     .max(30)
     .regex(/^[A-Z0-9_-]+$/, "Mã chi đoàn chỉ gồm chữ in hoa, số, gạch ngang hoặc gạch dưới.");
+export const publicStudentRegistrationSchema = z
+    .object({
+    studentId: z
+        .string()
+        .trim()
+        .min(5, "MSSV phải có ít nhất 5 chữ số.")
+        .max(20, "MSSV không hợp lệ.")
+        .regex(/^\d+$/, "MSSV chỉ được gồm chữ số."),
+    fullName: z.string().trim().min(2).max(200),
+    branchCode: branchCodeSchema,
+    password: z
+        .string()
+        .min(10)
+        .max(128)
+        .regex(/[A-Za-z]/, "Mật khẩu cần có chữ.")
+        .regex(/\d/, "Mật khẩu cần có số."),
+    confirmPassword: z.string().min(1),
+})
+    .refine((value) => value.password === value.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "Mật khẩu xác nhận không khớp.",
+});
 const activitySchema = z.object({
     clientKey: z.string().min(1),
     level: z.enum(["faculty", "university"]),

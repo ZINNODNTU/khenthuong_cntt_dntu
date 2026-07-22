@@ -2,33 +2,6 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/browser";
-
-function authErrorMessage(message: string) {
-  const normalized = message.toLowerCase();
-
-  if (
-    normalized.includes("email rate limit") ||
-    normalized.includes("rate limit")
-  ) {
-    return (
-      "Hệ thống đang tạm giới hạn gửi email xác nhận. " +
-      "Vui lòng thử lại sau hoặc liên hệ quản trị viên kiểm tra SMTP riêng."
-    );
-  }
-
-  if (
-    normalized.includes("already registered") ||
-    normalized.includes("already exists")
-  ) {
-    return (
-      "MSSV này đã có tài khoản. Vui lòng quay lại trang đăng nhập."
-    );
-  }
-
-  return message;
-}
 
 export function RegisterForm({
   branches,
@@ -41,8 +14,6 @@ export function RegisterForm({
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const router = useRouter();
-
   async function submit(
     event: React.FormEvent<HTMLFormElement>,
   ) {
@@ -51,82 +22,61 @@ export function RegisterForm({
     setMessage("");
     setSuccess(false);
 
-    const form = new FormData(event.currentTarget);
-    const studentId = String(
-      form.get("studentId"),
-    ).trim();
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
 
-    const email = `${studentId}@dntu.edu.vn`;
-    const password = String(form.get("password"));
-    const confirm = String(
-      form.get("confirmPassword"),
-    );
-
-    if (!/^\d+$/.test(studentId)) {
-      setMessage("MSSV chỉ được gồm chữ số.");
-      setBusy(false);
-      return;
-    }
-
-    if (password !== confirm) {
-      setMessage("Mật khẩu xác nhận không khớp.");
-      setBusy(false);
-      return;
-    }
-
-    if (
-      password.length < 10 ||
-      !/[A-Za-z]/.test(password) ||
-      !/\d/.test(password)
-    ) {
-      setMessage(
-        "Mật khẩu phải có ít nhất 10 ký tự, gồm chữ và số.",
-      );
-      setBusy(false);
-      return;
-    }
-
-    const client = createClient();
-
-    const confirmationUrl =
-      `${window.location.origin}/auth/confirm?next=/`;
-
-    const { data, error } = await client.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: confirmationUrl,
-        data: {
-          full_name: String(
-            form.get("fullName"),
-          ).trim(),
-          branch_code: String(
-            form.get("branchCode"),
-          ),
-          account_type: "student",
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      },
-    });
+        body: JSON.stringify({
+          fullName: String(form.get("fullName") || "").trim(),
+          branchCode: String(form.get("branchCode") || ""),
+          studentId: String(form.get("studentId") || "").trim(),
+          password: String(form.get("password") || ""),
+          confirmPassword: String(
+            form.get("confirmPassword") || "",
+          ),
+        }),
+      });
 
-    if (error) {
-      setMessage(authErrorMessage(error.message));
+      const result = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        requiresConfirmation?: boolean;
+        email?: string;
+      };
+
+      if (!response.ok) {
+        setMessage(
+          result.error ||
+            "Không thể tạo tài khoản. Vui lòng thử lại.",
+        );
+        return;
+      }
+
+      setSuccess(true);
+      formElement.reset();
+
+      if (result.requiresConfirmation) {
+        setMessage(
+          senderAddress
+            ? `Đăng ký thành công. Email xác nhận được gửi từ ${senderAddress}. Hãy kiểm tra Hộp thư đến và Spam.`
+            : "Đăng ký thành công. Hãy kiểm tra Hộp thư đến và Spam để xác nhận tài khoản.",
+        );
+      } else {
+        setMessage(
+          "Tài khoản đã được tạo. Bạn có thể quay về trang đăng nhập.",
+        );
+      }
+    } catch {
+      setMessage(
+        "Không thể kết nối máy chủ đăng ký. Vui lòng kiểm tra mạng và thử lại.",
+      );
+    } finally {
       setBusy(false);
-      return;
     }
-
-    if (data.session) {
-      router.replace("/");
-      router.refresh();
-      return;
-    }
-
-    setSuccess(true);
-    setMessage(
-      senderAddress
-        ? `Đăng ký thành công. Email xác nhận được gửi từ ${senderAddress}. Hãy kiểm tra Hộp thư đến và Spam.`
-        : "Đăng ký thành công. Hãy kiểm tra Hộp thư đến và Spam để xác nhận tài khoản.",
-    );
-    setBusy(false);
   }
 
   return (
@@ -154,6 +104,7 @@ export function RegisterForm({
             name="fullName"
             required
             minLength={2}
+            maxLength={200}
             autoComplete="name"
           />
         </div>
@@ -174,7 +125,7 @@ export function RegisterForm({
             </option>
 
             {branches.map((branch) => (
-              <option key={branch}>
+              <option key={branch} value={branch}>
                 {branch}
               </option>
             ))}
@@ -192,6 +143,8 @@ export function RegisterForm({
               name="studentId"
               type="text"
               required
+              minLength={5}
+              maxLength={20}
               inputMode="numeric"
               autoComplete="username"
               placeholder="Nhập MSSV"
@@ -202,7 +155,7 @@ export function RegisterForm({
           </div>
 
           <small>
-            Email đăng nhập và MSSV hồ sơ được tạo tự động từ dãy số này.
+            Mỗi MSSV chỉ được tạo một tài khoản duy nhất.
           </small>
         </div>
 
@@ -217,6 +170,7 @@ export function RegisterForm({
             type="password"
             required
             minLength={10}
+            maxLength={128}
             autoComplete="new-password"
           />
 
@@ -236,6 +190,7 @@ export function RegisterForm({
             type="password"
             required
             minLength={10}
+            maxLength={128}
             autoComplete="new-password"
           />
         </div>
@@ -245,7 +200,7 @@ export function RegisterForm({
           disabled={busy}
         >
           {busy
-            ? "Đang tạo tài khoản..."
+            ? "Đang kiểm tra và tạo tài khoản..."
             : "Tạo tài khoản"}
         </button>
       </form>

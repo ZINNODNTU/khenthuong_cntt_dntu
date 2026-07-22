@@ -182,6 +182,37 @@ create table public.profiles (
   )
 );
 
+-- Email is normalized by application code and auth triggers. This index
+-- also blocks case-only duplicates at database level.
+create unique index profiles_email_lower_unique
+  on public.profiles (lower(email));
+
+-- Public registration first reserves the MSSV in this server-only table.
+-- The primary key and lower-email index make concurrent duplicate requests
+-- impossible even before Supabase Auth finishes creating the user.
+create table public.student_account_registry (
+  student_id text primary key,
+  email text not null,
+  auth_user_id uuid unique references auth.users(id) on delete set null,
+  status text not null default 'pending',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+
+  constraint student_account_registry_id_format
+    check (student_id ~ '^[0-9]+$'),
+
+  constraint student_account_registry_email_match
+    check (lower(email) = lower(student_id || '@dntu.edu.vn')),
+
+  constraint student_account_registry_status_check
+    check (status in ('pending', 'created', 'confirmed', 'existing'))
+);
+
+create unique index student_account_registry_email_lower_unique
+  on public.student_account_registry (lower(email));
+
+alter table public.student_account_registry enable row level security;
+
 -- ---------------------------------------------------------------------
 -- EVALUATION PERIODS
 -- ---------------------------------------------------------------------
@@ -610,6 +641,8 @@ declare
   resolved_name text;
   branch_is_valid boolean;
   student_email_is_valid boolean;
+  resolved_student_id text;
+  registered_auth_user_id uuid;
 begin
   requested_branch := nullif(
     upper(trim(coalesce(new.raw_user_meta_data ->> 'branch_code', ''))),
@@ -636,6 +669,46 @@ begin
     nullif(trim(new.raw_user_meta_data ->> 'name'), ''),
     ''
   );
+
+  if student_email_is_valid then
+    resolved_student_id := split_part(lower(new.email), '@', 1);
+
+    select registry.auth_user_id
+    into registered_auth_user_id
+    from public.student_account_registry registry
+    where registry.student_id = resolved_student_id
+       or lower(registry.email) = lower(new.email)
+    limit 1
+    for update;
+
+    if registered_auth_user_id is not null
+      and registered_auth_user_id <> new.id then
+      raise exception 'STUDENT_ACCOUNT_ALREADY_EXISTS'
+        using errcode = '23505';
+    end if;
+
+    insert into public.student_account_registry (
+      student_id,
+      email,
+      auth_user_id,
+      status
+    )
+    values (
+      resolved_student_id,
+      lower(new.email),
+      new.id,
+      case
+        when new.email_confirmed_at is not null then 'confirmed'
+        else 'created'
+      end
+    )
+    on conflict (student_id) do update
+    set
+      email = excluded.email,
+      auth_user_id = excluded.auth_user_id,
+      status = excluded.status,
+      updated_at = now();
+  end if;
 
   insert into public.profiles (
     id,
@@ -678,6 +751,33 @@ create trigger on_auth_user_created
 after insert on auth.users
 for each row
 execute function public.handle_new_user();
+
+create or replace function public.sync_student_account_confirmation()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.email_confirmed_at is not null
+    and old.email_confirmed_at is distinct from new.email_confirmed_at then
+    update public.student_account_registry
+    set
+      status = 'confirmed',
+      updated_at = now()
+    where auth_user_id = new.id;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_student_registry_confirmed on auth.users;
+
+create trigger on_auth_user_student_registry_confirmed
+after update of email_confirmed_at on auth.users
+for each row
+execute function public.sync_student_account_confirmation();
 
 -- ---------------------------------------------------------------------
 -- APPLICATION VALIDATION TRIGGERS
@@ -1277,6 +1377,11 @@ alter default privileges for role postgres in schema public
 
 alter default privileges for role postgres in schema public
   grant execute on functions to service_role;
+
+-- Registration registry is server-only. RLS is enabled and direct client
+-- privileges are removed after the generic table grants above.
+revoke all on public.student_account_registry from anon, authenticated;
+grant all on public.student_account_registry to service_role;
 
 commit;
 

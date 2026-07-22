@@ -114,3 +114,12 @@ Sidebar được hiển thị cố định trên desktop và chuyển thành men
 - Email xác nhận dùng SMTP riêng được cấu hình trong Supabase.
 - Mẫu thư nằm tại `supabase/email-templates`.
 - Hướng dẫn nằm tại `docs/CUSTOM_SMTP_CONFIRMATION_EMAIL.md`.
+
+
+## Chống tài khoản trùng MSSV
+
+- Đăng ký được xử lý tại API server, không gọi `signUp` trực tiếp từ trình duyệt.
+- Mỗi MSSV/email chỉ có một bản ghi trong `student_account_registry`.
+- Database chặn đồng thời theo MSSV và email không phân biệt chữ hoa/thường.
+- Với database đang chạy, thực thi `supabase/hotfix/PREVENT_DUPLICATE_STUDENT_ACCOUNTS.sql`.
+- Xem `docs/PREVENT_DUPLICATE_STUDENT_ACCOUNTS.md`.

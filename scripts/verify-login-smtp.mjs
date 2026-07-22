@@ -85,13 +85,21 @@ const registerForm = readFileSync(
   "utf8",
 );
 
+if (!registerForm.includes("senderAddress")) {
+  fail("Register form is missing senderAddress");
+}
+
+const registerRoute = readFileSync(
+  resolve(process.cwd(), "app/api/auth/register/route.ts"),
+  "utf8",
+);
+
 for (const token of [
-  "senderAddress",
   "email rate limit",
   "/auth/confirm?next=/",
 ]) {
-  if (!registerForm.includes(token)) {
-    fail(`Register form is missing ${token}`);
+  if (!registerRoute.includes(token)) {
+    fail(`Register route is missing ${token}`);
   }
 }
 

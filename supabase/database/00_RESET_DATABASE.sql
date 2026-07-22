@@ -17,6 +17,7 @@ begin;
 
 -- Trigger nay nam tren bang auth.users, can go bo truoc khi xoa schema public.
 drop trigger if exists on_auth_user_created on auth.users;
+drop trigger if exists on_auth_user_student_registry_confirmed on auth.users;
 
 -- Xoa toan bo bang, enum, ham, trigger, policy va du lieu cua ung dung.
 drop schema if exists public cascade;

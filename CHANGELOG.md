@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.0 — Duplicate Student Account Fix
+
+- Chuyển đăng ký sinh viên sang API server.
+- Chặn một MSSV/email tạo nhiều tài khoản.
+- Bổ sung registry khóa duy nhất và unique index không phân biệt hoa thường.
+- Chặn yêu cầu đăng ký đồng thời.
+- Nhận diện phản hồi user giả của Supabase khi email đã tồn tại.
+- Bổ sung hotfix SQL cho database production và script kiểm tra tài khoản trùng.
+
+
 ## 1.0.0 — Login First & Custom SMTP
 
 - Chuyển `/` thành trang đăng nhập chính.

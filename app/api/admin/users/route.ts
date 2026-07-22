@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createSystemUserSchema, manageSystemUserSchema, } from "@/lib/validation";
 import { env } from "@/lib/env";
 import { writeAudit } from "@/lib/audit";
-import { isStudentDntuEmail } from "@/lib/identity";
+import { isStudentDntuEmail, studentIdFromDntuEmail } from "@/lib/identity";
 import type { SubmissionScope, UserRole } from "@/lib/types";
 async function requireAdmin() {
     const supabase = await createClient();
@@ -80,6 +80,26 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: accountError }, { status: 400 });
     }
     const admin = createAdminClient();
+    const studentId = payload.role === "submitter"
+        ? studentIdFromDntuEmail(email)
+        : null;
+    if (studentId) {
+        const { data: existingRegistry } = await admin
+            .from("student_account_registry")
+            .select("student_id")
+            .eq("student_id", studentId)
+            .maybeSingle();
+        const { data: existingProfile } = await admin
+            .from("profiles")
+            .select("id")
+            .eq("email", email)
+            .maybeSingle();
+        if (existingRegistry || existingProfile) {
+            return NextResponse.json({
+                error: "MSSV này đã có tài khoản.",
+            }, { status: 409 });
+        }
+    }
     const { data, error } = await admin.auth.admin.createUser({
         email,
         password: payload.password,
@@ -92,9 +112,14 @@ export async function POST(request: Request) {
         },
     });
     if (error || !data.user) {
+        const duplicate = Boolean(error?.message
+            ?.toLowerCase()
+            .match(/already|duplicate|exists/));
         return NextResponse.json({
-            error: error?.message || "Không thể tạo tài khoản",
-        }, { status: 400 });
+            error: duplicate
+                ? "MSSV hoặc email này đã có tài khoản."
+                : error?.message || "Không thể tạo tài khoản",
+        }, { status: duplicate ? 409 : 400 });
     }
     const { error: profileError } = await admin
         .from("profiles")
@@ -113,6 +138,13 @@ export async function POST(request: Request) {
     });
     if (profileError) {
         await admin.auth.admin.deleteUser(data.user.id);
+        if (studentId) {
+            await admin
+                .from("student_account_registry")
+                .delete()
+                .eq("student_id", studentId)
+                .is("auth_user_id", null);
+        }
         return NextResponse.json({
             error: "Không thể lưu thông tin phân quyền tài khoản",
         }, { status: 400 });

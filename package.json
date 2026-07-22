@@ -15,7 +15,9 @@
     "db:verify": "node scripts/verify-database-files.mjs",
     "check": "pnpm run verify && pnpm run db:verify && pnpm run typecheck",
     "ui:verify": "node scripts/verify-modern-ui.mjs",
-    "auth:verify": "node scripts/verify-login-smtp.mjs"
+    "auth:verify": "node scripts/verify-login-smtp.mjs",
+    "auth:uniqueness:verify": "node scripts/verify-student-account-uniqueness.mjs",
+    "auth:duplicates:audit": "node scripts/audit-duplicate-student-accounts.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.3",
