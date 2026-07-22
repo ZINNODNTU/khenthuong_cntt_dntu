@@ -13,7 +13,8 @@
     "verify": "node scripts/verify-clean-release.mjs",
     "storage:check": "node scripts/check-image-storage.mjs",
     "db:verify": "node scripts/verify-database-files.mjs",
-    "check": "pnpm run verify && pnpm run db:verify && pnpm run typecheck"
+    "check": "pnpm run verify && pnpm run db:verify && pnpm run typecheck",
+    "ui:verify": "node scripts/verify-modern-ui.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.3",

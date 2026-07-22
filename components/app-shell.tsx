@@ -11,10 +11,15 @@ import {
   ClipboardCheck,
   FilePlus2,
   Files,
+  HelpCircle,
+  Keyboard,
   ListChecks,
   Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
   Settings,
   ShieldCheck,
+  Sparkles,
   Users,
   X,
   type LucideIcon,
@@ -34,6 +39,13 @@ type NavGroup = {
   label: string;
   items: NavItem[];
 };
+
+type QuickStep = {
+  title: string;
+  description: string;
+};
+
+const SIDEBAR_STORAGE_KEY = "cntt-workspace-sidebar-collapsed";
 
 const adminGroups: NavGroup[] = [
   {
@@ -66,7 +78,7 @@ const adminGroups: NavGroup[] = [
     ],
   },
   {
-    label: "Cấu hình nghiệp vụ",
+    label: "Quản trị dữ liệu",
     items: [
       {
         href: "/periods",
@@ -109,7 +121,7 @@ const reviewerGroups: NavGroup[] = [
       {
         href: "/review",
         label: "Hồ sơ cần xét",
-        description: "Danh sách được phân công",
+        description: "Danh sách đang chờ xử lý",
         icon: ClipboardCheck,
       },
       {
@@ -129,7 +141,7 @@ const submitterGroups: NavGroup[] = [
       {
         href: "/applications/new",
         label: "Nộp thành tích",
-        description: "Khởi tạo hồ sơ mới",
+        description: "Tạo hồ sơ theo từng bước",
         icon: FilePlus2,
       },
       {
@@ -145,13 +157,13 @@ const submitterGroups: NavGroup[] = [
 function roleLabel(role: UserRole) {
   if (role === "admin") return "Quản trị viên";
   if (role === "reviewer") return "Cán bộ xét duyệt";
-  return "Người nộp hồ sơ";
+  return "Sinh viên / đơn vị";
 }
 
 function portalTitle(role: UserRole) {
-  if (role === "admin") return "Cổng quản trị";
-  if (role === "reviewer") return "Cổng xét duyệt";
-  return "Cổng nộp thành tích";
+  if (role === "admin") return "Không gian quản trị";
+  if (role === "reviewer") return "Không gian xét duyệt";
+  return "Không gian nộp hồ sơ";
 }
 
 function initials(profile: Profile) {
@@ -165,6 +177,66 @@ function initials(profile: Profile) {
   return value.slice(0, 2).toUpperCase();
 }
 
+function quickSteps(role: UserRole): QuickStep[] {
+  if (role === "admin") {
+    return [
+      {
+        title: "Mở đợt xét",
+        description:
+          "Tạo đợt xét, chọn thời gian và loại hồ sơ được phép tiếp nhận.",
+      },
+      {
+        title: "Chuẩn bị tài khoản",
+        description:
+          "Kiểm tra Chi đoàn, CLB và cấp tài khoản đại diện còn thiếu.",
+      },
+      {
+        title: "Theo dõi tiến độ",
+        description:
+          "Dùng Tổng quan và Toàn bộ hồ sơ để giám sát trạng thái xử lý.",
+      },
+    ];
+  }
+
+  if (role === "reviewer") {
+    return [
+      {
+        title: "Mở hàng đợi",
+        description:
+          "Chọn Hồ sơ cần xét để xem các hồ sơ đã gửi và đang xử lý.",
+      },
+      {
+        title: "Kiểm tra minh chứng",
+        description:
+          "Mở từng hồ sơ, đối chiếu nội dung và ảnh trước khi kết luận.",
+      },
+      {
+        title: "Ghi nhận kết quả",
+        description:
+          "Chọn Đạt, Không đạt hoặc Yêu cầu bổ sung kèm nhận xét rõ ràng.",
+      },
+    ];
+  }
+
+  return [
+    {
+      title: "Chuẩn bị thông tin",
+      description:
+        "Kiểm tra đúng MSSV, Chi đoàn và đợt xét trước khi bắt đầu.",
+    },
+    {
+      title: "Nộp theo từng bước",
+      description:
+        "Điền thành tích, thêm hoạt động và tải ảnh minh chứng rõ nét.",
+    },
+    {
+      title: "Theo dõi hồ sơ",
+      description:
+        "Mở Hồ sơ của tôi để xem trạng thái và yêu cầu bổ sung.",
+    },
+  ];
+}
+
 export function AppShell({
   profile,
   activeBranchCount,
@@ -176,6 +248,8 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const groups = useMemo(() => {
     if (profile.role === "admin") return adminGroups;
@@ -183,16 +257,58 @@ export function AppShell({
     return submitterGroups;
   }, [profile.role]);
 
+  const steps = useMemo(() => quickSteps(profile.role), [profile.role]);
+
+  useEffect(() => {
+    try {
+      setCollapsed(
+        window.localStorage.getItem(SIDEBAR_STORAGE_KEY) === "true",
+      );
+    } catch {
+      setCollapsed(false);
+    }
+  }, []);
+
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
 
   useEffect(() => {
-    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    const locked = mobileOpen || helpOpen;
+    document.body.style.overflow = locked ? "hidden" : "";
+
     return () => {
       document.body.style.overflow = "";
     };
-  }, [mobileOpen]);
+  }, [mobileOpen, helpOpen]);
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      setMobileOpen(false);
+      setHelpOpen(false);
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  function toggleCollapsed() {
+    setCollapsed((current) => {
+      const next = !current;
+
+      try {
+        window.localStorage.setItem(
+          SIDEBAR_STORAGE_KEY,
+          String(next),
+        );
+      } catch {
+        // The UI still works when browser storage is unavailable.
+      }
+
+      return next;
+    });
+  }
 
   const isActive = (href: string) => {
     if (href === "/applications") {
@@ -212,7 +328,8 @@ export function AppShell({
 
   const currentTitle = currentItem?.label || portalTitle(profile.role);
   const currentDescription =
-    currentItem?.description || "Hệ thống xét duyệt thành tích Khoa CNTT";
+    currentItem?.description ||
+    "Hệ thống xét duyệt thành tích Khoa Công nghệ thông tin";
 
   const scopeTitle =
     profile.role === "submitter"
@@ -227,11 +344,23 @@ export function AppShell({
     profile.role === "admin"
       ? `${activeBranchCount} Chi đoàn đang hoạt động`
       : profile.role === "reviewer"
-        ? "Xử lý hồ sơ theo phạm vi được phân quyền"
-        : "Mỗi đối tượng nộp một hồ sơ trong mỗi đợt";
+        ? "Xử lý hồ sơ theo quyền được cấp"
+        : "Một hồ sơ cho mỗi đợt xét";
 
   return (
-    <div className={`workspace-shell role-${profile.role}`}>
+    <div
+      className={[
+        "workspace-shell",
+        `role-${profile.role}`,
+        collapsed ? "is-collapsed" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      <a className="skip-link" href="#workspace-content">
+        Chuyển đến nội dung chính
+      </a>
+
       <button
         type="button"
         className={`workspace-overlay ${mobileOpen ? "is-visible" : ""}`}
@@ -244,11 +373,24 @@ export function AppShell({
         aria-label="Thanh điều hướng chính"
       >
         <div className="workspace-brand">
-          <BrandLogo size={48} priority />
-          <div className="workspace-brand-copy">
-            <strong>XÉT DUYỆT THÀNH TÍCH</strong>
-            <span>Khoa Công nghệ thông tin</span>
-          </div>
+          <Link
+            href={
+              profile.role === "submitter"
+                ? "/applications"
+                : profile.role === "reviewer"
+                  ? "/review"
+                  : "/dashboard"
+            }
+            className="workspace-brand-link"
+            aria-label="Về trang làm việc chính"
+          >
+            <BrandLogo size={44} priority />
+            <div className="workspace-brand-copy">
+              <strong>CNTT DNTU</strong>
+              <span>Xét duyệt thành tích</span>
+            </div>
+          </Link>
+
           <button
             type="button"
             className="workspace-sidebar-close"
@@ -259,6 +401,21 @@ export function AppShell({
           </button>
         </div>
 
+        <button
+          type="button"
+          className="workspace-collapse-button"
+          aria-label={collapsed ? "Mở rộng thanh bên" : "Thu gọn thanh bên"}
+          aria-pressed={collapsed}
+          title={collapsed ? "Mở rộng thanh bên" : "Thu gọn thanh bên"}
+          onClick={toggleCollapsed}
+        >
+          {collapsed ? (
+            <PanelLeftOpen size={17} />
+          ) : (
+            <PanelLeftClose size={17} />
+          )}
+        </button>
+
         <div className="workspace-portal-card">
           <span>Không gian làm việc</span>
           <strong>{portalTitle(profile.role)}</strong>
@@ -268,8 +425,10 @@ export function AppShell({
         <div className="workspace-navigation">
           {groups.map((group) => (
             <section className="workspace-nav-group" key={group.label}>
-              <div className="workspace-nav-label">{group.label}</div>
-              <nav>
+              <div className="workspace-nav-label">
+                <span>{group.label}</span>
+              </div>
+              <nav aria-label={group.label}>
                 {group.items.map((item) => {
                   const Icon = item.icon;
                   const active = isActive(item.href);
@@ -280,9 +439,12 @@ export function AppShell({
                       href={item.href}
                       className={active ? "is-active" : ""}
                       aria-current={active ? "page" : undefined}
+                      aria-label={item.label}
+                      data-tooltip={item.label}
+                      title={collapsed ? item.label : undefined}
                     >
                       <span className="workspace-nav-icon">
-                        <Icon size={18} strokeWidth={2} />
+                        <Icon size={19} strokeWidth={2} />
                       </span>
                       <span className="workspace-nav-copy">
                         <strong>{item.label}</strong>
@@ -344,9 +506,20 @@ export function AppShell({
           </div>
 
           <div className="workspace-topbar-actions">
+            <button
+              type="button"
+              className="workspace-icon-button"
+              aria-label="Mở hướng dẫn nhanh"
+              title="Hướng dẫn nhanh"
+              onClick={() => setHelpOpen(true)}
+            >
+              <HelpCircle size={18} />
+            </button>
+
             <span className={`workspace-role-badge role-${profile.role}`}>
               {roleLabel(profile.role)}
             </span>
+
             <div className="workspace-user-summary">
               <div className="workspace-avatar workspace-avatar-small">
                 {initials(profile)}
@@ -356,12 +529,74 @@ export function AppShell({
                 <span>{profile.email}</span>
               </div>
             </div>
+
             <SignOutButton />
           </div>
         </header>
 
-        <div className="workspace-content">{children}</div>
+        <div className="workspace-content" id="workspace-content">
+          {children}
+        </div>
       </main>
+
+      <button
+        type="button"
+        className={`workspace-help-backdrop ${helpOpen ? "is-visible" : ""}`}
+        aria-label="Đóng hướng dẫn"
+        onClick={() => setHelpOpen(false)}
+      />
+
+      <aside
+        className={`workspace-help-panel ${helpOpen ? "is-open" : ""}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Hướng dẫn sử dụng nhanh"
+      >
+        <div className="workspace-help-head">
+          <div className="workspace-help-icon">
+            <Sparkles size={20} />
+          </div>
+          <div>
+            <span>HƯỚNG DẪN NHANH</span>
+            <h2>{portalTitle(profile.role)}</h2>
+          </div>
+          <button
+            type="button"
+            className="workspace-help-close"
+            aria-label="Đóng hướng dẫn"
+            onClick={() => setHelpOpen(false)}
+          >
+            <X size={19} />
+          </button>
+        </div>
+
+        <p className="workspace-help-intro">
+          Ba bước chính để hoàn thành công việc nhanh và hạn chế sai sót.
+        </p>
+
+        <div className="workspace-help-steps">
+          {steps.map((step, index) => (
+            <article key={step.title}>
+              <span>{index + 1}</span>
+              <div>
+                <strong>{step.title}</strong>
+                <p>{step.description}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <div className="workspace-shortcut-card">
+          <Keyboard size={18} />
+          <div>
+            <strong>Mẹo thao tác</strong>
+            <p>
+              Nhấn <kbd>Esc</kbd> để đóng menu hoặc bảng hướng dẫn.
+              Trạng thái thu gọn sidebar được ghi nhớ trên thiết bị.
+            </p>
+          </div>
+        </div>
+      </aside>
     </div>
   );
 }
