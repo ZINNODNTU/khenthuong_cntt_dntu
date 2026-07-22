@@ -91,3 +91,26 @@ pnpm dev
 ## Vercel
 
 Xem `docs/VERCEL_BUILD_FIX.md`. Lệnh deploy chỉ chạy `next build`; chạy `pnpm check` riêng trước khi đẩy mã nguồn.
+## Giao diện điều hướng
+
+Sidebar được hiển thị cố định trên desktop và chuyển thành menu trượt trên mobile. Xem `docs/PROFESSIONAL_SIDEBAR.md`.
+
+
+## Giao diện hiện đại
+
+- Sidebar desktop có thể mở/thu gọn và ghi nhớ trạng thái.
+- Mobile dùng menu drawer.
+- Nút trợ giúp trên topbar hiển thị hướng dẫn theo vai trò.
+- Design System nằm tại `app/modern-ui.css`.
+- Quy chuẩn UX nằm tại `docs/UI_UX_STANDARD.md`.
+
+
+## Trang đầu và email xác nhận
+
+- `/` là trang đăng nhập chính.
+- Người đã đăng nhập được chuyển đến không gian đúng vai trò.
+- Người chưa đăng nhập khi mở trang bảo vệ được đưa về `/` và quay lại trang
+  ban đầu sau khi đăng nhập.
+- Email xác nhận dùng SMTP riêng được cấu hình trong Supabase.
+- Mẫu thư nằm tại `supabase/email-templates`.
+- Hướng dẫn nằm tại `docs/CUSTOM_SMTP_CONFIRMATION_EMAIL.md`.

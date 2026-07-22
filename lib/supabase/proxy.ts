@@ -11,14 +11,17 @@ const PUBLIC_PAGE_PREFIXES = [
     "/_next",
 ];
 function isPublicPage(pathname: string) {
-    return (PUBLIC_PAGE_PREFIXES.some((prefix) => pathname.startsWith(prefix)) ||
+    return (
+        pathname === "/" ||
+        PUBLIC_PAGE_PREFIXES.some((prefix) => pathname.startsWith(prefix)) ||
         pathname === "/favicon.ico" ||
-        pathname.startsWith("/brand/"));
+        pathname.startsWith("/brand/")
+    );
 }
 function loginPath(request: NextRequest) {
     const next = `${request.nextUrl.pathname}${request.nextUrl.search}`;
-    const url = new URL("/401", request.url);
-    url.searchParams.set("reason", "session");
+    const url = new URL("/", request.url);
+    url.searchParams.set("error", "session");
     url.searchParams.set("next", next);
     return url;
 }

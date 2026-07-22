@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1"
+    />
+    <title>Xác nhận tài khoản</title>
+  </head>
+
+  <body
+    style="
+      margin:0;
+      padding:0;
+      background:#f8fafc;
+      color:#0f172a;
+      font-family:Arial,Helvetica,sans-serif;
+    "
+  >
+    <table
+      role="presentation"
+      width="100%"
+      cellspacing="0"
+      cellpadding="0"
+      style="background:#f8fafc;padding:32px 12px"
+    >
+      <tr>
+        <td align="center">
+          <table
+            role="presentation"
+            width="100%"
+            cellspacing="0"
+            cellpadding="0"
+            style="
+              max-width:600px;
+              overflow:hidden;
+              background:#ffffff;
+              border:1px solid #e2e8f0;
+              border-radius:16px;
+            "
+          >
+            <tr>
+              <td
+                style="
+                  padding:28px 30px;
+                  color:#ffffff;
+                  background:#0f2147;
+                "
+              >
+                <div
+                  style="
+                    font-size:12px;
+                    font-weight:700;
+                    letter-spacing:.08em;
+                  "
+                >
+                  KHOA CÔNG NGHỆ THÔNG TIN · DNTU
+                </div>
+
+                <div
+                  style="
+                    margin-top:8px;
+                    font-size:24px;
+                    font-weight:800;
+                    line-height:1.3;
+                  "
+                >
+                  Xác nhận tài khoản
+                </div>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:30px">
+                <p
+                  style="
+                    margin:0;
+                    font-size:16px;
+                    line-height:1.7;
+                  "
+                >
+                  Xin chào,
+                </p>
+
+                <p
+                  style="
+                    margin:14px 0 0;
+                    color:#475569;
+                    font-size:15px;
+                    line-height:1.7;
+                  "
+                >
+                  Bạn vừa đăng ký tài khoản trên Hệ thống nộp và xét
+                  duyệt thành tích Khoa Công nghệ thông tin. Vui lòng
+                  xác nhận địa chỉ email để kích hoạt tài khoản.
+                </p>
+
+                <div style="padding:26px 0;text-align:center">
+                  <a
+                    href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/"
+                    style="
+                      display:inline-block;
+                      padding:13px 22px;
+                      color:#ffffff;
+                      background:#2563eb;
+                      border-radius:10px;
+                      font-size:15px;
+                      font-weight:700;
+                      text-decoration:none;
+                    "
+                  >
+                    Xác nhận tài khoản
+                  </a>
+                </div>
+
+                <p
+                  style="
+                    margin:0;
+                    color:#64748b;
+                    font-size:13px;
+                    line-height:1.65;
+                  "
+                >
+                  Nếu bạn không thực hiện đăng ký này, hãy bỏ qua email.
+                  Không chuyển tiếp liên kết xác nhận cho người khác.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td
+                style="
+                  padding:18px 30px;
+                  color:#64748b;
+                  background:#f8fafc;
+                  border-top:1px solid #e2e8f0;
+                  font-size:12px;
+                  line-height:1.6;
+                "
+              >
+                Đoàn TNCS Hồ Chí Minh · Khoa Công nghệ thông tin · DNTU
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

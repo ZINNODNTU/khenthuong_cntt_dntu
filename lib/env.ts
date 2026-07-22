@@ -63,4 +63,7 @@ export const env = {
 
   publicSignupEnabled: () =>
     enabled("NEXT_PUBLIC_PUBLIC_SIGNUP_ENABLED", true),
+
+  authEmailSenderAddress: () =>
+    process.env.NEXT_PUBLIC_AUTH_EMAIL_SENDER_ADDRESS || "",
 };

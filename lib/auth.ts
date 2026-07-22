@@ -12,7 +12,7 @@ export async function requireUser() {
     const supabase = await createClient();
     const { data: { user }, error: userError, } = await supabase.auth.getUser();
     if (userError || !user) {
-        redirect("/401?reason=session");
+        redirect("/?error=session");
     }
     const { data: profile, error: profileError } = await supabase
         .from("profiles")
