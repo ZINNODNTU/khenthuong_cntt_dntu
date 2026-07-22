@@ -1,0 +1,14 @@
+{
+  "framework": "nextjs",
+  "regions": ["sin1"],
+  "installCommand": "corepack enable && corepack prepare pnpm@10.34.5 --activate && pnpm install --no-frozen-lockfile",
+  "buildCommand": "pnpm exec next build",
+  "functions": {
+    "app/api/evidence/upload/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/evidence/[id]/route.ts": {
+      "maxDuration": 60
+    }
+  }
+}

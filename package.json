@@ -1,0 +1,40 @@
+{
+  "name": "cntt-award-review-system",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "preinstall": "node scripts/require-pnpm.mjs",
+    "generate-storage-secret": "node scripts/generate-storage-secret.mjs",
+    "verify": "node scripts/verify-clean-release.mjs",
+    "storage:check": "node scripts/check-image-storage.mjs",
+    "db:verify": "node scripts/verify-database-files.mjs",
+    "check": "pnpm run verify && pnpm run db:verify && pnpm run typecheck"
+  },
+  "dependencies": {
+    "@supabase/ssr": "0.12.3",
+    "@supabase/supabase-js": "2.110.7",
+    "clsx": "2.1.1",
+    "date-fns": "4.1.0",
+    "lucide-react": "1.25.0",
+    "next": "16.2.10",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.0",
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.2",
+    "typescript": "^5.9.3"
+  },
+  "packageManager": "pnpm@10.34.5",
+  "engines": {
+    "node": "22.x",
+    "pnpm": "10.x"
+  }
+}
