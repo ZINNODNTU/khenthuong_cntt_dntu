@@ -222,6 +222,8 @@ create table public.evaluation_periods (
   description text,
   starts_at timestamptz not null,
   ends_at timestamptz not null,
+  evidence_starts_on date not null,
+  evidence_ends_on date not null,
   status public.period_status not null default 'draft',
   allow_individual boolean not null default true,
   allow_branch_collective boolean not null default true,
@@ -231,7 +233,9 @@ create table public.evaluation_periods (
   updated_at timestamptz not null default now(),
 
   constraint evaluation_period_time_check
-    check (ends_at > starts_at)
+    check (ends_at > starts_at),
+  constraint evaluation_period_evidence_time_check
+    check (evidence_ends_on >= evidence_starts_on)
 );
 
 -- ---------------------------------------------------------------------
@@ -992,6 +996,35 @@ begin
         )
     ) then
       raise exception 'Co thanh tich khen thuong chua du thong tin.';
+    end if;
+
+    if new.application_type = 'individual' then
+      if new.birth_date is null then
+        raise exception 'Ho so ca nhan phai co ngay sinh.';
+      end if;
+      if new.birth_date > (current_date - interval '18 years')::date then
+        raise exception 'Nguoi nop ho so phai du 18 tuoi.';
+      end if;
+    end if;
+
+    if exists (
+      select 1 from public.activities activity
+      where activity.application_id = new.id
+        and (activity.activity_date is null
+          or activity.activity_date < period_record.evidence_starts_on
+          or activity.activity_date > period_record.evidence_ends_on)
+    ) then
+      raise exception 'Ngay hoat dong nam ngoai khoang minh chung hop le.';
+    end if;
+
+    if exists (
+      select 1 from public.prior_awards award
+      where award.application_id = new.id
+        and (award.issued_date is null
+          or award.issued_date < period_record.evidence_starts_on
+          or award.issued_date > period_record.evidence_ends_on)
+    ) then
+      raise exception 'Ngay cap khen thuong nam ngoai khoang minh chung hop le.';
     end if;
 
     new.submitted_at := now();

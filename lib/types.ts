@@ -33,6 +33,8 @@ export type EvaluationPeriod = {
     description: string | null;
     starts_at: string;
     ends_at: string;
+    evidence_starts_on: string;
+    evidence_ends_on: string;
     status: PeriodStatus;
     allow_individual: boolean;
     allow_branch_collective: boolean;

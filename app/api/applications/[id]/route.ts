@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { writeAudit } from "@/lib/audit";
+import { deleteEvidence } from "@/lib/apps-script-storage";
+import { createAdminClient } from "@/lib/supabase/admin";
 const schema = z.object({
     achievements: z.string().min(20).max(15000),
     summary: z.string().max(8000).optional().default(""),
@@ -98,3 +100,30 @@ export async function PATCH(request: Request, { params }: {
     return NextResponse.json({ ok: true });
 }
 
+const deleteSchema = z.object({ confirmationCode: z.string().max(100).optional().default("") });
+
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
+    const { data: profile } = await supabase.from("profiles").select("role,is_active,must_change_password").eq("id", user.id).single();
+    if (profile?.must_change_password || !profile?.is_active) return NextResponse.json({ error: "Tài khoản không được phép xóa hồ sơ" }, { status: 403 });
+    const parsed = deleteSchema.safeParse(await request.json().catch(() => ({})));
+    if (!parsed.success) return NextResponse.json({ error: "Dữ liệu xác nhận không hợp lệ" }, { status: 400 });
+    const admin = createAdminClient();
+    const { data: application } = await admin.from("applications").select("id,code,subject_name,status,created_by").eq("id", id).maybeSingle();
+    if (!application) return NextResponse.json({ error: "Không tìm thấy hồ sơ" }, { status: 404 });
+    const isAdmin = profile.role === "admin";
+    const ownerCanDelete = profile.role === "submitter" && application.created_by === user.id && application.status === "draft";
+    if (!isAdmin && !ownerCanDelete) return NextResponse.json({ error: "Bạn chỉ được xóa hồ sơ nháp của mình" }, { status: 403 });
+    if (isAdmin && application.status !== "draft" && parsed.data.confirmationCode !== application.code) {
+        return NextResponse.json({ error: `Nhập đúng mã ${application.code} để xác nhận xóa.` }, { status: 400 });
+    }
+    const { data: evidences } = await admin.from("evidences").select("drive_file_id").eq("application_id", id);
+    await writeAudit(supabase, user.id, "application.delete", "application", id, { code: application.code, subjectName: application.subject_name, status: application.status, evidenceCount: evidences?.length || 0 });
+    await Promise.allSettled((evidences || []).map(({ drive_file_id }) => deleteEvidence(drive_file_id)));
+    const { error } = await admin.from("applications").delete().eq("id", id);
+    if (error) return NextResponse.json({ error: error.message || "Không thể xóa hồ sơ" }, { status: 400 });
+    return NextResponse.json({ ok: true });
+}

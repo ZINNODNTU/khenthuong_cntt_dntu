@@ -36,12 +36,24 @@ export async function POST(request: Request) {
     }
     const { data: period } = await supabase
         .from("evaluation_periods")
-        .select("id,status,starts_at,ends_at,allow_individual,allow_branch_collective,allow_club_collective")
+        .select("id,status,starts_at,ends_at,evidence_starts_on,evidence_ends_on,allow_individual,allow_branch_collective,allow_club_collective")
         .eq("id", payload.evaluationPeriodId)
         .single();
     const now = Date.now();
     if (!period || period.status !== "open" || now < new Date(period.starts_at).getTime() || now > new Date(period.ends_at).getTime()) {
         return NextResponse.json({ error: "Đợt xét hiện không nhận hồ sơ" }, { status: 400 });
+    }
+    const today = new Date();
+    const latestAdultBirthDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+    if (payload.applicationType === "individual" && payload.birthDate && new Date(`${payload.birthDate}T00:00:00`) > latestAdultBirthDate) {
+        return NextResponse.json({ error: "Người nộp hồ sơ phải đủ 18 tuổi." }, { status: 400 });
+    }
+    const outsideEvidenceRange = (date: string) => date && (date < period.evidence_starts_on || date > period.evidence_ends_on);
+    if (payload.activities.some((activity) => outsideEvidenceRange(activity.activityDate))) {
+        return NextResponse.json({ error: `Ngày hoạt động phải từ ${period.evidence_starts_on} đến ${period.evidence_ends_on}.` }, { status: 400 });
+    }
+    if (payload.priorAwards.some((award) => outsideEvidenceRange(award.issuedDate))) {
+        return NextResponse.json({ error: `Ngày cấp khen thưởng phải từ ${period.evidence_starts_on} đến ${period.evidence_ends_on}.` }, { status: 400 });
     }
     let branchCode: string | null = null;
     let clubId: string | null = null;

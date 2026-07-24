@@ -231,28 +231,26 @@ export const provisionClubAccountSchema = z.object({
     id: z.string().uuid().optional(),
     allMissing: z.boolean().optional().default(false),
 });
+const dateOnlySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Ngày minh chứng không hợp lệ.");
 const periodSchemaBase = z.object({
     name: z.string().trim().min(3).max(200),
     description: z.string().trim().max(1000).optional().default(""),
     startsAt: z.string().datetime(),
     endsAt: z.string().datetime(),
+    evidenceStartsOn: dateOnlySchema,
+    evidenceEndsOn: dateOnlySchema,
     status: z.enum(["draft", "open", "closed"]),
     allowIndividual: z.boolean().default(true),
     allowBranchCollective: z.boolean().default(true),
     allowClubCollective: z.boolean().default(true),
 });
-const validPeriodTime = (value: {
-    startsAt: string;
-    endsAt: string;
-}) => new Date(value.endsAt) > new Date(value.startsAt);
-export const createPeriodSchema = periodSchemaBase.refine(validPeriodTime, {
-    message: "Thời gian kết thúc phải sau thời gian bắt đầu.",
-    path: ["endsAt"],
-});
+const validPeriodTime = (value: { startsAt: string; endsAt: string }) => new Date(value.endsAt) > new Date(value.startsAt);
+const validEvidenceTime = (value: { evidenceStartsOn: string; evidenceEndsOn: string }) => value.evidenceEndsOn >= value.evidenceStartsOn;
+export const createPeriodSchema = periodSchemaBase
+    .refine(validPeriodTime, { message: "Thời gian kết thúc phải sau thời gian bắt đầu.", path: ["endsAt"] })
+    .refine(validEvidenceTime, { message: "Ngày kết thúc minh chứng phải từ ngày bắt đầu trở đi.", path: ["evidenceEndsOn"] });
 export const updatePeriodSchema = periodSchemaBase
     .extend({ id: z.string().uuid() })
-    .refine(validPeriodTime, {
-    message: "Thời gian kết thúc phải sau thời gian bắt đầu.",
-    path: ["endsAt"],
-});
+    .refine(validPeriodTime, { message: "Thời gian kết thúc phải sau thời gian bắt đầu.", path: ["endsAt"] })
+    .refine(validEvidenceTime, { message: "Ngày kết thúc minh chứng phải từ ngày bắt đầu trở đi.", path: ["evidenceEndsOn"] });
 
