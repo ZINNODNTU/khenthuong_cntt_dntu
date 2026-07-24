@@ -141,7 +141,7 @@ export function UserManager({
       </form>
 
       <div className="card card-body">
-        <div className="table-wrap">
+        <div className="table-wrap table-responsive-card">
           <table className="table">
             <thead>
               <tr>
@@ -158,28 +158,28 @@ export function UserManager({
             <tbody>
               {users.map((user) => (
                 <tr key={user.id}>
-                  <td>
+                  <td data-label="Họ tên">
                     <b>{user.full_name}</b>
                     {user.id === currentUserId && <br />}
                     {user.id === currentUserId && <span className="text-xs text-secondary">Tài khoản đang đăng nhập</span>}
                   </td>
-                  <td className="text-sm">{user.email}</td>
-                  <td className="text-sm">{roleNames[user.role]}</td>
-                  <td className="text-sm">{user.role === "submitter" ? scopeNames[user.submission_scope] : "—"}</td>
-                  <td className="text-sm">{user.branch_code || (user.club_id ? "CLB" : "—")}</td>
-                  <td>
+                  <td data-label="Email" className="text-sm">{user.email}</td>
+                  <td data-label="Vai trò" className="text-sm">{roleNames[user.role]}</td>
+                  <td data-label="Phạm vi" className="text-sm">{user.role === "submitter" ? scopeNames[user.submission_scope] : "—"}</td>
+                  <td data-label="Đơn vị" className="text-sm">{user.branch_code || (user.club_id ? "CLB" : "—")}</td>
+                  <td data-label="Mật khẩu">
                     {user.must_change_password ? (
                       <span className="badge badge-yellow">Phải đổi lần đầu</span>
                     ) : (
                       <span className="text-sm text-secondary">Đã thiết lập</span>
                     )}
                   </td>
-                  <td>
+                  <td data-label="Trạng thái">
                     <span className={`badge ${user.is_active ? "badge-green" : "badge-red"}`}>
                       {user.is_active ? "Đang hoạt động" : "Đã khóa"}
                     </span>
                   </td>
-                  <td>
+                  <td data-label="Thao tác">
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" onClick={() => { setResetTarget(user); setNewPassword(""); }}>
                         Đặt lại mật khẩu

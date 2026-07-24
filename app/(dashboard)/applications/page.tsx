@@ -2,13 +2,14 @@ import Link from "next/link";
 import { requireRole } from "@/lib/auth";
 import { getActiveBranchCodes } from "@/lib/branches";
 import { getEvaluationPeriods } from "@/lib/periods";
-import { APP_STATUSES, STATUS_LABEL } from "@/lib/constants";
+import { APP_STATUSES, STATUS_LABEL, PAGE_SIZE } from "@/lib/constants";
 import { StatusBadge } from "@/components/status-badge";
 import type { Application } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Pagination } from "@/components/ui/pagination";
 import { FilePlus2, Search } from "lucide-react";
 import { DeleteApplicationButton } from "@/components/delete-application-button";
 
@@ -30,11 +31,19 @@ export default async function ApplicationsPage({
     getEvaluationPeriods(supabase),
   ]);
 
+  const requestedPage = Math.max(1, Number(f.page) || 1);
+  const limit = PAGE_SIZE;
+  const requestedOffset = (requestedPage - 1) * PAGE_SIZE;
+
+  // Fetch rows and exact count in one GET request. Separate HEAD count requests can
+  // lose PostgREST error details through proxies and previously crashed this page.
   let q = supabase
     .from("applications")
-    .select("id,code,evaluation_period_id,subject_name,branch_code,club_id,application_type,collective_type,status,updated_at,evidences(count)")
-    .order("updated_at", { ascending: false });
+    .select("id,code,evaluation_period_id,subject_name,branch_code,club_id,application_type,collective_type,status,updated_at,evidences(count)", { count: "exact" })
+    .order("updated_at", { ascending: false })
+    .range(requestedOffset, requestedOffset + limit - 1);
 
+  if (!admin) q = q.eq("created_by", profile.id);
   if (admin && f.branch) q = q.eq("branch_code", f.branch);
   if (f.period) q = q.eq("evaluation_period_id", f.period);
   if (f.status) q = q.eq("status", f.status);
@@ -48,8 +57,19 @@ export default async function ApplicationsPage({
     q = q.or(`subject_name.ilike.%${s}%,code.ilike.%${s}%`);
   }
 
-  const { data, error } = await q;
-  if (error) throw new Error(error.message);
+  const { data, count: total, error } = await q;
+  if (error) {
+    console.error("Applications query failed", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+    });
+    throw new Error("Không thể tải danh sách hồ sơ. Vui lòng thử lại.");
+  }
+
+  const totalPages = Math.ceil((total || 0) / PAGE_SIZE);
+  const page = totalPages ? Math.min(requestedPage, totalPages) : 1;
 
   const rows = (data || []) as (Pick<Application, "id" | "code" | "evaluation_period_id" | "subject_name" | "branch_code" | "club_id" | "application_type" | "collective_type" | "status" | "updated_at"> & { evidences: { count: number }[] })[];
   const periodMap = new Map(periods.map((p) => [p.id, p.name]));
@@ -127,7 +147,7 @@ export default async function ApplicationsPage({
       </form>
 
       <div className="card card-body">
-        <div className="table-wrap">
+        <div className="table-wrap table-responsive-card">
           <table className="table">
             <thead>
               <tr>
@@ -146,19 +166,19 @@ export default async function ApplicationsPage({
               {rows.length ? (
                 rows.map((a) => (
                   <tr key={a.id}>
-                    <td><b>{a.code}</b></td>
-                    <td>
+                    <td data-label="Mã hồ sơ"><b>{a.code}</b></td>
+                    <td data-label="Đối tượng">
                       <Link href={`/applications/${a.id}`} style={{ color: "var(--color-primary)", fontWeight: "var(--font-weight-medium)" }}>
                         {a.subject_name}
                       </Link>
                     </td>
-                    <td className="text-secondary">{periodMap.get(a.evaluation_period_id) || "—"}</td>
-                    <td className="text-secondary">{a.branch_code || (a.club_id ? "CLB" : "—")}</td>
-                    <td className="text-secondary">{typeLabel(a)}</td>
-                    <td className="text-secondary">{a.evidences?.[0]?.count || 0}</td>
-                    <td><StatusBadge status={a.status} /></td>
-                    <td className="text-secondary">{formatDate(a.updated_at)}</td>
-                    <td>{(admin || a.status === "draft") && <DeleteApplicationButton id={a.id} code={a.code} subjectName={a.subject_name} status={a.status} compact />}</td>
+                    <td data-label="Đợt xét" className="text-secondary">{periodMap.get(a.evaluation_period_id) || "—"}</td>
+                    <td data-label="Đơn vị" className="text-secondary">{a.branch_code || (a.club_id ? "CLB" : "—")}</td>
+                    <td data-label="Loại" className="text-secondary">{typeLabel(a)}</td>
+                    <td data-label="Ảnh" className="text-secondary">{a.evidences?.[0]?.count || 0}</td>
+                    <td data-label="Trạng thái"><StatusBadge status={a.status} /></td>
+                    <td data-label="Cập nhật" className="text-secondary">{formatDate(a.updated_at)}</td>
+                    <td data-label="Thao tác">{(admin || a.status === "draft") && <DeleteApplicationButton id={a.id} code={a.code} subjectName={a.subject_name} status={a.status} compact />}</td>
                   </tr>
                 ))
               ) : (
@@ -174,6 +194,14 @@ export default async function ApplicationsPage({
             </tbody>
           </table>
         </div>
+
+        <Pagination
+          page={page}
+          totalItems={total || 0}
+          pageSize={PAGE_SIZE}
+          pathname="/applications"
+          query={f}
+        />
       </div>
     </>
   );

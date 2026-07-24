@@ -12,7 +12,7 @@ export function EmptyState({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="empty-state">
+    <div className="empty-state animate-fade-in">
       <div className="empty-state-icon">
         <Icon size={40} />
       </div>

@@ -4,6 +4,7 @@ import { type InputHTMLAttributes, type TextareaHTMLAttributes, type SelectHTMLA
 
 interface FieldProps {
   label?: string;
+  htmlFor?: string;
   required?: boolean;
   helper?: string;
   error?: string;
@@ -11,18 +12,18 @@ interface FieldProps {
   className?: string;
 }
 
-export function Field({ label, required, helper, error, children, className = "" }: FieldProps) {
+export function Field({ label, htmlFor, required, helper, error, children, className = "" }: FieldProps) {
   return (
-    <div className={`field ${className}`}>
+    <div className={`field ${className}`.trim()}>
       {label && (
-        <label className="field-label">
+        <label className="field-label" htmlFor={htmlFor}>
           {label}
-          {required && <span className="required">*</span>}
+          {required && <span className="required" aria-hidden="true">*</span>}
         </label>
       )}
       {children}
-      {helper && <span className="field-helper">{helper}</span>}
-      {error && <span className="field-error">{error}</span>}
+      {helper && <span className="field-helper" id={htmlFor ? `${htmlFor}-helper` : undefined}>{helper}</span>}
+      {error && <span className="field-error" id={htmlFor ? `${htmlFor}-error` : undefined} role="alert">{error}</span>}
     </div>
   );
 }
@@ -32,11 +33,15 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ error, className = "", ...props }, ref) => {
+  ({ error, className = "", id, "aria-describedby": describedBy, ...props }, ref) => {
+    const errorId = error && id ? `${id}-error` : undefined;
     return (
       <input
         ref={ref}
-        className={`input ${error ? "input-error" : ""} ${className}`}
+        id={id}
+        className={`input ${error ? "input-error" : ""} ${className}`.trim()}
+        aria-invalid={error || undefined}
+        aria-describedby={[describedBy, errorId].filter(Boolean).join(" ") || undefined}
         {...props}
       />
     );
@@ -49,11 +54,15 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
 }
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ error, className = "", ...props }, ref) => {
+  ({ error, className = "", id, "aria-describedby": describedBy, ...props }, ref) => {
+    const errorId = error && id ? `${id}-error` : undefined;
     return (
       <textarea
         ref={ref}
-        className={`textarea ${error ? "input-error" : ""} ${className}`}
+        id={id}
+        className={`textarea ${error ? "input-error" : ""} ${className}`.trim()}
+        aria-invalid={error || undefined}
+        aria-describedby={[describedBy, errorId].filter(Boolean).join(" ") || undefined}
         {...props}
       />
     );
@@ -66,11 +75,15 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ error, className = "", children, ...props }, ref) => {
+  ({ error, className = "", children, id, "aria-describedby": describedBy, ...props }, ref) => {
+    const errorId = error && id ? `${id}-error` : undefined;
     return (
       <select
         ref={ref}
-        className={`select ${error ? "input-error" : ""} ${className}`}
+        id={id}
+        className={`select ${error ? "input-error" : ""} ${className}`.trim()}
+        aria-invalid={error || undefined}
+        aria-describedby={[describedBy, errorId].filter(Boolean).join(" ") || undefined}
         {...props}
       >
         {children}

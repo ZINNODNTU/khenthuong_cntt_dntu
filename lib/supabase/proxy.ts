@@ -4,6 +4,7 @@ const PUBLIC_PAGE_PREFIXES = [
     "/login",
     "/register",
     "/configuration",
+    "/design-preview",
     "/401",
     "/403",
     "/500",

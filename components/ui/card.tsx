@@ -2,12 +2,26 @@ export function Card({
   children,
   className = "",
   padding = true,
+  hoverable = false,
+  variant = "bordered",
 }: {
   children: React.ReactNode;
   className?: string;
   padding?: boolean;
+  hoverable?: boolean;
+  variant?: "bordered" | "elevated" | "flat";
 }) {
-  return <div className={`card ${padding ? "card-body" : ""} ${className}`.trim()}>{children}</div>;
+  const classes = [
+    "card",
+    padding ? "card-body" : "",
+    hoverable ? "card-hover" : "",
+    variant === "elevated" ? "shadow-md" : "",
+    variant === "flat" ? "border-0 shadow-none" : "",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return <div className={classes}>{children}</div>;
 }
 
 export function CardHeader({
@@ -34,12 +48,12 @@ export function CardSection({
   return (
     <div className="card form-section">
       {(title || description || action) && (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-3)", marginBottom: "var(--space-4)" }}>
+        <div className="card-section-heading">
           <div>
             {title && <h3>{title}</h3>}
             {description && <p>{description}</p>}
           </div>
-          {action && <div style={{ flexShrink: 0 }}>{action}</div>}
+          {action && <div className="card-section-action">{action}</div>}
         </div>
       )}
       {children}

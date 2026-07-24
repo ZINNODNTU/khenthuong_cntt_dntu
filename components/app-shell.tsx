@@ -16,11 +16,13 @@ import {
   ListChecks,
   LogOut,
   Menu,
+  Moon,
   PanelLeftClose,
   PanelLeftOpen,
   Settings,
   ShieldCheck,
   Sparkles,
+  Sun,
   Users,
   X,
   type LucideIcon,
@@ -150,6 +152,7 @@ export function AppShell({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [dark, setDark] = useState(false);
 
   const groups = useMemo(() => {
     if (profile.role === "admin") return adminGroups;
@@ -186,6 +189,26 @@ export function AppShell({
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
+
+  // Theme init
+  useEffect(() => {
+    try {
+      const t = window.localStorage.getItem("cntt-theme");
+      setDark(t === "dark" || (!t && window.matchMedia("(prefers-color-scheme:dark)").matches));
+    } catch { /* ok */ }
+  }, []);
+
+  function toggleTheme() {
+    setDark((prev) => {
+      const next = !prev;
+      const theme = next ? "dark" : "light";
+      try {
+        window.localStorage.setItem("cntt-theme", theme);
+      } catch { /* ok */ }
+      document.documentElement.setAttribute("data-theme", theme);
+      return next;
+    });
+  }
 
   function toggleCollapsed() {
     setCollapsed((current) => {
@@ -257,6 +280,7 @@ export function AppShell({
             type="button"
             className="sidebar-toggle"
             aria-label={collapsed ? "Mở rộng thanh bên" : "Thu gọn thanh bên"}
+            aria-pressed={collapsed}
             title={collapsed ? "Mở rộng thanh bên" : "Thu gọn thanh bên"}
             onClick={toggleCollapsed}
           >
@@ -342,20 +366,32 @@ export function AppShell({
           </div>
 
           <div className="topbar-right">
-            <button
-              type="button"
-              className="btn btn-ghost btn-icon"
-              aria-label="Hướng dẫn nhanh"
-              title="Hướng dẫn nhanh"
-              onClick={() => setHelpOpen(true)}
-            >
-              <HelpCircle size={18} />
-            </button>
+            <div className="topbar-actions" aria-label="Công cụ nhanh">
+              <button
+                type="button"
+                className="btn btn-ghost btn-icon"
+                aria-label={dark ? "Chuyển giao diện sáng" : "Chuyển giao diện tối"}
+                title={dark ? "Chế độ sáng" : "Chế độ tối"}
+                onClick={toggleTheme}
+              >
+                {dark ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-ghost btn-icon"
+                aria-label="Hướng dẫn nhanh"
+                title="Hướng dẫn nhanh"
+                onClick={() => setHelpOpen(true)}
+              >
+                <HelpCircle size={18} />
+              </button>
+            </div>
 
             <span className="topbar-role-badge">{roleLabel(profile.role)}</span>
 
             <div className="topbar-user">
-              <div className="sidebar-avatar" style={{ width: 32, height: 32, fontSize: 10 }}>
+              <div className="sidebar-avatar topbar-avatar">
                 {initials(profile)}
               </div>
               <div>
@@ -410,7 +446,7 @@ export function AppShell({
           </button>
         </div>
 
-        <p className="field-helper" style={{ padding: "0 var(--space-4)", marginBottom: "var(--space-3)" }}>
+        <p className="field-helper help-intro">
           Ba bước chính để hoàn thành công việc nhanh và hạn chế sai sót.
         </p>
 
@@ -425,13 +461,13 @@ export function AppShell({
             </div>
           ))}
 
-          <div className="card card-body" style={{ marginTop: "var(--space-3)" }}>
+          <div className="card card-body help-tip">
             <div className="flex gap-3">
               <Keyboard size={18} className="flex-shrink-0 text-secondary" />
               <div>
-                <div className="font-semibold" style={{ fontSize: "var(--font-size-sm)" }}>Mẹo thao tác</div>
-                <p className="text-xs text-secondary" style={{ marginTop: 4 }}>
-                  Nhấn <kbd style={{ padding: "2px 6px", background: "var(--color-muted)", borderRadius: "var(--radius-sm)", fontFamily: "monospace" }}>Esc</kbd> để đóng menu hoặc bảng hướng dẫn. Trạng thái thu gọn sidebar được ghi nhớ trên thiết bị.
+                <div className="font-semibold help-tip-title">Mẹo thao tác</div>
+                <p className="text-xs text-secondary help-tip-body">
+                  Nhấn <kbd className="help-kbd">Esc</kbd> để đóng menu hoặc bảng hướng dẫn. Trạng thái thu gọn sidebar được ghi nhớ trên thiết bị.
                 </p>
               </div>
             </div>

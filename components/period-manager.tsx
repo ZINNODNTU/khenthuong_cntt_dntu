@@ -148,7 +148,7 @@ export function PeriodManager({ periods }: { periods: EvaluationPeriod[] }) {
       </form>
 
       <div className="card card-body">
-        <div className="table-wrap">
+        <div className="table-wrap table-responsive-card">
           <table className="table">
             <thead>
               <tr>
@@ -162,12 +162,12 @@ export function PeriodManager({ periods }: { periods: EvaluationPeriod[] }) {
             <tbody>
               {periods.map((p) => (
                 <tr key={p.id}>
-                  <td>
+                  <td data-label="Đợt xét">
                     <b>{p.name}</b>
                     <br />
                     <span className="text-xs text-secondary">{p.description || "—"}</span>
                   </td>
-                  <td className="text-sm">
+                  <td data-label="Thời gian" className="text-sm">
                     {new Date(p.starts_at).toLocaleString("vi-VN")}
                     <br />
                     đến {new Date(p.ends_at).toLocaleString("vi-VN")}
@@ -178,15 +178,15 @@ export function PeriodManager({ periods }: { periods: EvaluationPeriod[] }) {
                       <Button size="sm" variant="outline" loading={busy === p.id} onClick={() => update(p, p.status, evidenceRanges[p.id] || { start: p.evidence_starts_on, end: p.evidence_ends_on })}>Lưu ngày minh chứng</Button>
                     </div>
                   </td>
-                  <td className="text-sm text-secondary">
+                  <td data-label="Loại hồ sơ" className="text-sm text-secondary">
                     {[p.allow_individual && "Cá nhân", p.allow_branch_collective && "Chi đoàn", p.allow_club_collective && "CLB"].filter(Boolean).join(" · ")}
                   </td>
-                  <td>
+                  <td data-label="Trạng thái">
                     <span className={`badge ${p.status === "open" ? "badge-green" : p.status === "closed" ? "badge-red" : "badge-gray"}`}>
                       {p.status === "open" ? "Đang nhận" : p.status === "closed" ? "Đã đóng" : "Bản nháp"}
                     </span>
                   </td>
-                  <td>
+                  <td data-label="Thao tác">
                     <div className="flex gap-2">
                       {p.status !== "open" && (
                         <Button size="sm" variant="primary" loading={busy === p.id} onClick={() => update(p, "open")}>

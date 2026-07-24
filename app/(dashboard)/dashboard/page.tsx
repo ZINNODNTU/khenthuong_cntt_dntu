@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {
   Activity, AlertTriangle, ArrowRight, CalendarRange, CheckCircle2,
-  CircleAlert, Clock3, FileCheck2, Files, Gauge, History, Radio,
+  CircleAlert, Clock3, FileCheck2, Files, Gauge, History, Radio, Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { requireRole } from "@/lib/auth";
@@ -46,6 +46,54 @@ function ageInDays(date: string, now: number) {
   return Math.max(0, Math.floor((now - new Date(date).getTime()) / DAY));
 }
 
+function StatusDonut({ completed, processing, revision, total }: {
+  completed: number;
+  processing: number;
+  revision: number;
+  total: number;
+}) {
+  const safeTotal = Math.max(total, 1);
+  const circumference = 2 * Math.PI * 42;
+  const segments = [
+    { label: "Đã kết luận", value: completed, className: "is-completed" },
+    { label: "Đang xử lý", value: processing, className: "is-processing" },
+    { label: "Chờ bổ sung", value: revision, className: "is-revision" },
+  ];
+  let offset = 0;
+
+  return (
+    <div className="monitor-donut-layout">
+      <div className="monitor-donut" role="img" aria-label={`${completed} hồ sơ đã kết luận trên tổng số ${total}`}>
+        <svg viewBox="0 0 100 100" aria-hidden="true">
+          <circle className="monitor-donut-track" cx="50" cy="50" r="42" />
+          {segments.map((segment) => {
+            const length = (segment.value / safeTotal) * circumference;
+            const circle = (
+              <circle
+                key={segment.label}
+                className={`monitor-donut-segment ${segment.className}`}
+                cx="50"
+                cy="50"
+                r="42"
+                strokeDasharray={`${length} ${circumference - length}`}
+                strokeDashoffset={-offset}
+              />
+            );
+            offset += length;
+            return circle;
+          })}
+        </svg>
+        <div><strong>{total}</strong><span>Hồ sơ</span></div>
+      </div>
+      <div className="monitor-donut-legend">
+        {segments.map((segment) => (
+          <div key={segment.label}><span className={segment.className} /><small>{segment.label}</small><strong>{segment.value}</strong></div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default async function DashboardPage() {
   const { supabase } = await requireRole(["admin"]);
   const periods = await getEvaluationPeriods(supabase);
@@ -60,13 +108,19 @@ export default async function DashboardPage() {
     .order("updated_at", { ascending: false });
   if (open) appsQuery = appsQuery.eq("evaluation_period_id", open.id);
 
-  const [appsResult, branches, auditResult] = await Promise.all([
+  const [appsResult, branches, auditResult, countsResult] = await Promise.all([
     appsQuery,
     getActiveBranchCodes(supabase),
     supabase.from("audit_logs").select("id,action,entity_type,created_at").order("created_at", { ascending: false }).limit(7),
+    supabase.from("applications").select("application_type", { count: "exact", head: true }).eq("application_type", "individual"),
   ]);
 
   const applications = (appsResult.data || []) as MonitorApplication[];
+
+  const totalMembers = countsResult.count ?? 0;
+  const membersSubmitted = applications.filter((a) => a.application_type === "individual").length;
+  const memberRate = totalMembers ? Math.round((membersSubmitted / totalMembers) * 100) : 0;
+
   const counts = Object.fromEntries(STATUS_MONITOR.map(({ key }) => [key, 0])) as Record<ApplicationStatus, number>;
   applications.forEach((application) => { counts[application.status] += 1; });
 
@@ -80,6 +134,10 @@ export default async function DashboardPage() {
   const lastSevenDays = now - 7 * DAY;
   const submittedThisWeek = applications.filter(({ submitted_at }) => submitted_at && new Date(submitted_at).getTime() >= lastSevenDays).length;
   const decidedThisWeek = applications.filter(({ decided_at }) => decided_at && new Date(decided_at).getTime() >= lastSevenDays).length;
+  const individualByBranch = new Map<string, number>();
+  applications.filter((a) => a.application_type === "individual").forEach((a) => {
+    if (a.branch_code) individualByBranch.set(a.branch_code, (individualByBranch.get(a.branch_code) || 0) + 1);
+  });
   const coveredBranches = new Set(applications.map(({ branch_code }) => branch_code).filter(Boolean));
   const coverageRate = branches.length ? Math.round((coveredBranches.size / branches.length) * 100) : 0;
   const latest = applications.slice(0, 8);
@@ -114,15 +172,23 @@ export default async function DashboardPage() {
       <div className="monitor-primary-grid">
         <section className="card monitor-panel">
           <div className="monitor-panel-heading"><div><span className="monitor-panel-eyebrow">LUỒNG XỬ LÝ</span><h2>Phân bố trạng thái</h2></div><FileCheck2 size={20} aria-hidden="true" /></div>
-          <div className="monitor-status-list">
-            {STATUS_MONITOR.map(({ key, label, tone }) => (
-              <div className="monitor-status-row" key={key}>
-                <div className="monitor-status-meta"><span>{label}</span><strong>{counts[key]}</strong></div>
-                <div className="monitor-progress" role="progressbar" aria-label={`${label}: ${counts[key]} hồ sơ`} aria-valuemin={0} aria-valuemax={maxStatusCount} aria-valuenow={counts[key]}>
-                  <span className={`monitor-progress-${tone}`} style={{ width: `${(counts[key] / maxStatusCount) * 100}%` }} />
+          <div className="monitor-chart-grid">
+            <StatusDonut
+              completed={completed}
+              processing={counts.submitted + counts.review}
+              revision={counts.revision}
+              total={applications.length}
+            />
+            <div className="monitor-status-list">
+              {STATUS_MONITOR.map(({ key, label, tone }) => (
+                <div className="monitor-status-row" key={key}>
+                  <div className="monitor-status-meta"><span>{label}</span><strong>{counts[key]}</strong></div>
+                  <div className="monitor-progress" role="progressbar" aria-label={`${label}: ${counts[key]} hồ sơ`} aria-valuemin={0} aria-valuemax={maxStatusCount} aria-valuenow={counts[key]}>
+                    <span className={`monitor-progress-${tone}`} style={{ width: `${(counts[key] / maxStatusCount) * 100}%` }} />
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
           <div className="monitor-throughput">
             <div><Activity size={17} /><span>Nộp 7 ngày qua</span><strong>{submittedThisWeek}</strong></div>
@@ -152,8 +218,16 @@ export default async function DashboardPage() {
           <div className="monitor-panel-heading"><div><span className="monitor-panel-eyebrow">ĐỘ PHỦ ĐƠN VỊ</span><h2>Tiến độ Chi đoàn</h2></div><strong className="monitor-coverage-value">{coverageRate}%</strong></div>
           <div className="monitor-coverage-bar"><span style={{ width: `${coverageRate}%` }} /></div>
           <p className="monitor-panel-caption">{coveredBranches.size}/{branches.length} Chi đoàn đã có hồ sơ trong phạm vi đang xem</p>
+          <div className="monitor-coverage-stats">
+            <div><Users size={20} /><div><strong>{totalMembers.toLocaleString("vi-VN")}</strong><span>Đoàn viên có hồ sơ khen thưởng</span></div></div>
+            <div><CheckCircle2 size={20} /><div><strong>{membersSubmitted.toLocaleString("vi-VN")}</strong><span>Hồ sơ cá nhân đã nộp</span></div></div>
+            <div><Activity size={20} /><div><strong>{memberRate}%</strong><span>Tỷ lệ đoàn viên tham gia</span></div></div>
+          </div>
           <div className="monitor-branch-grid">
-            {branches.map((branch) => <div className={`monitor-branch ${coveredBranches.has(branch) ? "is-covered" : ""}`} key={branch}><span>{branch}</span><small>{coveredBranches.has(branch) ? "Đã nộp" : "Chưa nộp"}</small></div>)}
+            {branches.map((branch) => {
+              const count = individualByBranch.get(branch);
+              return <div className={`monitor-branch${count ? " is-covered" : ""}`} key={branch}><span>{branch}</span><small>{count ? `${count} hồ sơ` : "Chưa nộp"}</small></div>;
+            })}
           </div>
         </section>
 
@@ -168,10 +242,37 @@ export default async function DashboardPage() {
 
       <section className="card monitor-panel monitor-latest">
         <div className="monitor-panel-heading"><div><span className="monitor-panel-eyebrow">DÒNG DỮ LIỆU</span><h2>Hồ sơ cập nhật mới nhất</h2></div><Link className="monitor-panel-link" href="/applications">Xem tất cả <ArrowRight size={14} /></Link></div>
-        <div className="table-wrap"><table className="table"><thead><tr><th>Mã</th><th>Đối tượng</th><th>Đơn vị</th><th>Loại</th><th>Trạng thái</th><th>Cập nhật</th></tr></thead><tbody>
-          {latest.map((application) => <tr key={application.id}><td><b>{application.code}</b></td><td><Link className="font-medium monitor-table-link" href={`/applications/${application.id}`}>{application.subject_name}</Link></td><td className="text-secondary">{application.branch_code || "CLB"}</td><td className="text-secondary">{application.application_type === "individual" ? "Cá nhân" : application.collective_type === "club" ? "Tập thể CLB" : "Tập thể Chi đoàn"}</td><td><StatusBadge status={application.status} /></td><td className="text-secondary">{formatDate(application.updated_at)}</td></tr>)}
-          {!latest.length && <tr><td colSpan={6}><div className="monitor-empty"><Files size={28} /><strong>Chưa có hồ sơ</strong><span>Dữ liệu mới sẽ xuất hiện tại đây.</span></div></td></tr>}
-        </tbody></table></div>
+        <div className="table-wrap table-responsive-card">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Mã</th>
+                <th>Đối tượng</th>
+                <th>Đơn vị</th>
+                <th>Loại</th>
+                <th>Trạng thái</th>
+                <th>Cập nhật</th>
+              </tr>
+            </thead>
+            <tbody>
+              {latest.map((application) => (
+                <tr key={application.id}>
+                  <td data-label="Mã"><b>{application.code}</b></td>
+                  <td data-label="Đối tượng"><Link className="font-medium monitor-table-link" href={`/applications/${application.id}`}>{application.subject_name}</Link></td>
+                  <td data-label="Đơn vị" className="text-secondary">{application.branch_code || "CLB"}</td>
+                  <td data-label="Loại" className="text-secondary">{application.application_type === "individual" ? "Cá nhân" : application.collective_type === "club" ? "Tập thể CLB" : "Tập thể Chi đoàn"}</td>
+                  <td data-label="Trạng thái"><StatusBadge status={application.status} /></td>
+                  <td data-label="Cập nhật" className="text-secondary">{formatDate(application.updated_at)}</td>
+                </tr>
+              ))}
+              {!latest.length && (
+                <tr>
+                  <td colSpan={6}><div className="monitor-empty"><Files size={28} /><strong>Chưa có hồ sơ</strong><span>Dữ liệu mới sẽ xuất hiện tại đây.</span></div></td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
     </>
   );

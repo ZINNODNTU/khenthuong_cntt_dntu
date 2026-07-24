@@ -56,9 +56,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         className={classes}
         disabled={disabled || loading}
+        aria-busy={loading || undefined}
         {...props}
       >
-        {loading ? <Loader2 size={16} className="spin" /> : children}
+        {loading && <Loader2 size={16} className="spin" aria-hidden="true" />}
+        <span className={loading ? "btn-label-loading" : undefined}>{children}</span>
       </button>
     );
   }

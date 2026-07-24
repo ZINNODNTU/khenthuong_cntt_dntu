@@ -49,7 +49,7 @@ export default async function ResultsPage({
       </form>
 
       <div className="card card-body">
-        <div className="table-wrap">
+        <div className="table-wrap table-responsive-card">
           <table className="table">
             <thead>
               <tr>
@@ -66,17 +66,17 @@ export default async function ResultsPage({
               {rows.length ? (
                 rows.map((a) => (
                   <tr key={a.id}>
-                    <td><b>{a.code}</b></td>
-                    <td>
+                    <td data-label="Mã"><b>{a.code}</b></td>
+                    <td data-label="Đối tượng">
                       <Link href={`/applications/${a.id}`} style={{ color: "var(--color-primary)", fontWeight: "var(--font-weight-medium)" }}>
                         {a.subject_name}
                       </Link>
                     </td>
-                    <td className="text-secondary">{pm.get(a.evaluation_period_id) || "—"}</td>
-                    <td className="text-secondary">{a.branch_code || "CLB"}</td>
-                    <td><StatusBadge status={a.status} /></td>
-                    <td className="text-secondary">{a.review_comment || "—"}</td>
-                    <td className="text-secondary">{formatDate(a.decided_at)}</td>
+                    <td data-label="Đợt xét" className="text-secondary">{pm.get(a.evaluation_period_id) || "—"}</td>
+                    <td data-label="Đơn vị" className="text-secondary">{a.branch_code || "CLB"}</td>
+                    <td data-label="Kết quả"><StatusBadge status={a.status} /></td>
+                    <td data-label="Nhận xét" className="text-secondary">{a.review_comment || "—"}</td>
+                    <td data-label="Ngày xét" className="text-secondary">{formatDate(a.decided_at)}</td>
                   </tr>
                 ))
               ) : (

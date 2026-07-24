@@ -59,7 +59,7 @@ export default async function ReviewQueuePage({
       </form>
 
       <div className="card card-body">
-        <div className="table-wrap">
+        <div className="table-wrap table-responsive-card">
           <table className="table">
             <thead>
               <tr>
@@ -77,18 +77,18 @@ export default async function ReviewQueuePage({
               {rows.length ? (
                 rows.map((a) => (
                   <tr key={a.id}>
-                    <td><b>{a.code}</b></td>
-                    <td>
+                    <td data-label="Mã"><b>{a.code}</b></td>
+                    <td data-label="Đối tượng">
                       <Link href={`/review/${a.id}`} style={{ color: "var(--color-primary)", fontWeight: "var(--font-weight-medium)" }}>
                         {a.subject_name}
                       </Link>
                     </td>
-                    <td className="text-secondary">{pm.get(a.evaluation_period_id) || "—"}</td>
-                    <td className="text-secondary">{a.branch_code || "CLB"}</td>
-                    <td className="text-secondary">{typeLabel(a)}</td>
-                    <td className="text-secondary">{a.evidences?.[0]?.count || 0}</td>
-                    <td><StatusBadge status={a.status} /></td>
-                    <td className="text-secondary">{formatDate(a.updated_at)}</td>
+                    <td data-label="Đợt xét" className="text-secondary">{pm.get(a.evaluation_period_id) || "—"}</td>
+                    <td data-label="Đơn vị" className="text-secondary">{a.branch_code || "CLB"}</td>
+                    <td data-label="Loại" className="text-secondary">{typeLabel(a)}</td>
+                    <td data-label="Ảnh" className="text-secondary">{a.evidences?.[0]?.count || 0}</td>
+                    <td data-label="Trạng thái"><StatusBadge status={a.status} /></td>
+                    <td data-label="Cập nhật" className="text-secondary">{formatDate(a.updated_at)}</td>
                   </tr>
                 ))
               ) : (

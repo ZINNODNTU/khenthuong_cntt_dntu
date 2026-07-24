@@ -2,72 +2,69 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 let failed = false;
+const root = process.cwd();
 
 function fail(message) {
   failed = true;
-  console.error(`MODERN UI VERIFY FAILED: ${message}`);
+  console.error(`UI VERIFY FAILED: ${message}`);
 }
 
-const required = [
-  "app/modern-ui.css",
-  "components/app-shell.tsx",
-  "docs/UI_UX_STANDARD.md",
-];
-
-for (const file of required) {
-  if (!existsSync(resolve(process.cwd(), file))) {
+function read(file) {
+  const path = resolve(root, file);
+  if (!existsSync(path)) {
     fail(`Missing ${file}`);
+    return "";
   }
+  return readFileSync(path, "utf8");
 }
 
-const shell = readFileSync(
-  resolve(process.cwd(), "components/app-shell.tsx"),
-  "utf8",
-);
+const css = read("app/globals.css");
+const shell = read("components/app-shell.tsx");
+const layout = read("app/layout.tsx");
+const modal = read("components/ui/modal.tsx");
+const inputs = read("components/ui/input.tsx");
+const pagination = read("components/ui/pagination.tsx");
 
 for (const token of [
-  "SIDEBAR_STORAGE_KEY",
-  "PanelLeftClose",
-  "PanelLeftOpen",
-  "workspace-help-panel",
-  "workspace-collapse-button",
-  "aria-pressed",
-  "data-tooltip",
-]) {
-  if (!shell.includes(token)) {
-    fail(`AppShell is missing ${token}`);
-  }
-}
-
-const layout = readFileSync(
-  resolve(process.cwd(), "app/layout.tsx"),
-  "utf8",
-);
-
-if (!layout.includes('import "./modern-ui.css"')) {
-  fail("Root layout does not import modern-ui.css.");
-}
-
-const css = readFileSync(
-  resolve(process.cwd(), "app/modern-ui.css"),
-  "utf8",
-);
-
-for (const token of [
-  ".workspace-shell.is-collapsed",
-  ".workspace-help-panel",
-  "@media (max-width: 900px)",
+  "[data-theme=\"dark\"]",
   "@media (prefers-reduced-motion: reduce)",
   ".skip-link",
-  "--ui-primary: #2563eb",
+  ".table-responsive-card",
+  ".pagination-btn-active",
+  ":focus-visible",
 ]) {
-  if (!css.includes(token)) {
-    fail(`Modern UI CSS is missing ${token}`);
-  }
+  if (!css.includes(token)) fail(`globals.css is missing ${token}`);
 }
 
-if (!failed) {
-  console.log("Modern student UI verification: PASS");
+for (const token of ["SIDEBAR_STORAGE_KEY", "aria-pressed", "aria-expanded", "data-tooltip", "cntt-theme"]) {
+  if (!shell.includes(token)) fail(`AppShell is missing ${token}`);
 }
 
+if (!layout.includes('import "./globals.css"')) fail("Root layout does not import globals.css.");
+if (!layout.includes("ThemeScript")) fail("Root layout is missing pre-paint theme script.");
+
+for (const token of ["aria-labelledby", "aria-describedby", "FOCUSABLE", "document.body.style.overflow"]) {
+  if (!modal.includes(token)) fail(`Modal is missing ${token}`);
+}
+
+for (const token of ["htmlFor", "aria-invalid", "aria-describedby"]) {
+  if (!inputs.includes(token)) fail(`Form controls are missing ${token}`);
+}
+
+for (const token of ["aria-current", "aria-disabled", "pageWindow"]) {
+  if (!pagination.includes(token)) fail(`Pagination is missing ${token}`);
+}
+
+for (const file of [
+  "app/(dashboard)/applications/page.tsx",
+  "app/(dashboard)/review/page.tsx",
+  "app/(dashboard)/results/page.tsx",
+  "app/(dashboard)/dashboard/page.tsx",
+]) {
+  const source = read(file);
+  if (!source.includes("table-responsive-card")) fail(`${file} lacks responsive table strategy`);
+}
+
+if (!failed) console.log("Production UI verification: PASS");
 process.exitCode = failed ? 1 : 0;
+

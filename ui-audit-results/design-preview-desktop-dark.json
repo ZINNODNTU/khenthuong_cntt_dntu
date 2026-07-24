@@ -1,0 +1,13 @@
+{
+  "geometry": {
+    "viewport": 1440,
+    "pageWidth": 1440,
+    "offenders": [
+      "div.award-gradient",
+      "div.award-orb orb-two"
+    ]
+  },
+  "violations": [],
+  "consoleErrors": [],
+  "networkErrors": []
+}

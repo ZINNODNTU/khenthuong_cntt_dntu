@@ -4,9 +4,9 @@ import { LoginForm } from "@/components/login-form";
 
 export function LoginScreen({ signupEnabled }: { signupEnabled: boolean }) {
   return (
-    <div className="login-page">
+    <main className="login-page">
       <div className="login-container">
-        <div className="login-card card">
+        <div className="login-card card animate-scale-in">
           <div className="login-header">
             <div className="login-logo">
               <BrandLogo size={56} priority />
@@ -22,6 +22,6 @@ export function LoginScreen({ signupEnabled }: { signupEnabled: boolean }) {
           </Suspense>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

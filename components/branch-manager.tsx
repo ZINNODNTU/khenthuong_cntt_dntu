@@ -133,7 +133,7 @@ export function BranchManager({
       )}
 
       <div className="card card-body">
-        <div className="table-wrap">
+        <div className="table-wrap table-responsive-card">
           <table className="table">
             <thead>
               <tr>
@@ -149,9 +149,9 @@ export function BranchManager({
                 const account = accountByBranch.get(branch.code);
                 return (
                   <tr key={branch.code}>
-                    <td><b>{branch.code}</b></td>
-                    <td>{branch.name}</td>
-                    <td>
+                    <td data-label="Mã"><b>{branch.code}</b></td>
+                    <td data-label="Tên hiển thị">{branch.name}</td>
+                    <td data-label="Tài khoản">
                       {account ? (
                         <>
                           <b>{account.email}</b>
@@ -164,13 +164,13 @@ export function BranchManager({
                         <span className="badge badge-gray">Chưa cấp</span>
                       )}
                     </td>
-                    <td>
+                    <td data-label="Trạng thái">
                       <span className={`badge ${branch.is_active ? "badge-green" : "badge-gray"}`}>
                         {branch.is_active ? "Đang sử dụng" : "Ngừng sử dụng"}
                       </span>
                     </td>
                     {canManage && (
-                      <td>
+                      <td data-label="Thao tác">
                         <div className="flex gap-2">
                           <Button size="sm" variant="outline" loading={busyCode === branch.code} onClick={() => provision(branch.code)}>
                             {account ? "Đặt lại 123456" : "Cấp tài khoản"}
@@ -186,7 +186,7 @@ export function BranchManager({
               })}
               {!branches.length && (
                 <tr>
-                  <td colSpan={5}>
+                  <td colSpan={canManage ? 5 : 4}>
                     <div className="empty-state">
                       <p className="text-sm text-secondary">Chưa có Chi đoàn.</p>
                     </div>

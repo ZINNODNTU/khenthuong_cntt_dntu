@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
+
+const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
 
 export function Modal({
   open,
@@ -20,21 +22,44 @@ export function Modal({
 }) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  const descriptionId = useId();
 
   useEffect(() => {
     if (!open) return;
-    const prev = document.activeElement as HTMLElement | null;
+    const previous = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     contentRef.current?.focus();
-    return () => prev?.focus();
-  }, [open]);
 
-  useEffect(() => {
-    if (!open) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab" || !contentRef.current) return;
+      const elements = [...contentRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)];
+      if (!elements.length) {
+        event.preventDefault();
+        return;
+      }
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     }
+
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previousOverflow;
+      previous?.focus();
+    };
   }, [open, onClose]);
 
   if (!open) return null;
@@ -44,8 +69,8 @@ export function Modal({
       ref={overlayRef}
       className="modal-overlay"
       role="presentation"
-      onMouseDown={(e) => {
-        if (e.target === overlayRef.current) onClose();
+      onMouseDown={(event) => {
+        if (event.target === overlayRef.current) onClose();
       }}
     >
       <div
@@ -53,22 +78,19 @@ export function Modal({
         className="modal"
         role="dialog"
         aria-modal="true"
-        aria-label={title}
+        aria-labelledby={title ? titleId : undefined}
+        aria-describedby={description ? descriptionId : undefined}
+        aria-label={title ? undefined : "Hộp thoại"}
         tabIndex={-1}
-        onMouseDown={(e) => e.stopPropagation()}
+        onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="modal-header">
           <div>
-            {title && <h3>{title}</h3>}
-            {description && <p>{description}</p>}
+            {title && <h3 id={titleId}>{title}</h3>}
+            {description && <p id={descriptionId}>{description}</p>}
           </div>
-          <button
-            type="button"
-            className="btn btn-ghost btn-icon btn-sm"
-            aria-label="Đóng"
-            onClick={onClose}
-          >
-            <X size={16} />
+          <button type="button" className="btn btn-ghost btn-icon btn-sm" aria-label="Đóng" onClick={onClose}>
+            <X size={16} aria-hidden="true" />
           </button>
         </div>
         <div className="modal-body">{children}</div>

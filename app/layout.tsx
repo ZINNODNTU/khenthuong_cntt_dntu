@@ -21,13 +21,27 @@ export const metadata: Metadata = {
   },
 };
 
+// Inline script to set theme before React hydrates — prevents flash
+function ThemeScript() {
+  return (
+    <script
+      dangerouslySetInnerHTML={{
+        __html: `(function(){try{var t=localStorage.getItem("cntt-theme");if(!t){t=window.matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"}document.documentElement.setAttribute("data-theme",t)}catch(e){}})()`,
+      }}
+    />
+  );
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" className={inter.variable}>
+    <html lang="vi" className={inter.variable} suppressHydrationWarning data-scroll-behavior="smooth">
+      <head>
+        <ThemeScript />
+      </head>
       <body>{children}</body>
     </html>
   );

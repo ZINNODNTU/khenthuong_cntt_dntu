@@ -13,17 +13,22 @@
     "verify": "node scripts/verify-clean-release.mjs",
     "storage:check": "node scripts/check-image-storage.mjs",
     "db:verify": "node scripts/verify-database-files.mjs",
-    "check": "pnpm run verify && pnpm run db:verify && pnpm run typecheck",
+    "check": "pnpm run verify && pnpm run db:verify && pnpm run ui:self-check && pnpm run ui:verify && pnpm run typecheck",
+    "ui:self-check": "node scripts/ui-self-check.mjs",
     "ui:verify": "node scripts/verify-modern-ui.mjs",
     "auth:verify": "node scripts/verify-login-smtp.mjs",
     "auth:uniqueness:verify": "node scripts/verify-student-account-uniqueness.mjs",
-    "auth:duplicates:audit": "node scripts/audit-duplicate-student-accounts.mjs"
+    "auth:duplicates:audit": "node scripts/audit-duplicate-student-accounts.mjs",
+    "ui:audit": "playwright test tests/ui-audit.spec.ts",
+    "ui:audit:headed": "playwright test tests/ui-audit.spec.ts --headed",
+    "ui:motion-audit": "playwright test tests/motion-audit.spec.ts"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.3",
     "@supabase/supabase-js": "2.110.7",
     "clsx": "2.1.1",
     "date-fns": "4.1.0",
+    "framer-motion": "12.42.2",
     "lucide-react": "1.25.0",
     "next": "16.2.10",
     "react": "19.2.7",
@@ -31,9 +36,13 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.12.1",
+    "@playwright/test": "1.61.1",
+    "@tailwindcss/postcss": "4.3.3",
     "@types/node": "24.10.0",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
+    "tailwindcss": "4.3.3",
     "typescript": "^5.9.3"
   },
   "packageManager": "pnpm@10.34.5",

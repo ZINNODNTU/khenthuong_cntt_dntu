@@ -129,7 +129,7 @@ export function ClubManager({
       </form>
 
       <div className="card card-body">
-        <div className="table-wrap">
+        <div className="table-wrap table-responsive-card">
           <table className="table">
             <thead>
               <tr>
@@ -145,9 +145,9 @@ export function ClubManager({
                 const account = accountByClub.get(club.id);
                 return (
                   <tr key={club.id}>
-                    <td><b>{club.code}</b></td>
-                    <td>{club.name}</td>
-                    <td>
+                    <td data-label="Mã"><b>{club.code}</b></td>
+                    <td data-label="Tên CLB">{club.name}</td>
+                    <td data-label="Tài khoản">
                       {account ? (
                         <>
                           <b>{account.email}</b>
@@ -158,8 +158,8 @@ export function ClubManager({
                         <span className="badge badge-gray">Chưa cấp</span>
                       )}
                     </td>
-                    <td><span className={`badge ${club.is_active ? "badge-green" : "badge-gray"}`}>{club.is_active ? "Đang sử dụng" : "Ngừng sử dụng"}</span></td>
-                    <td>
+                    <td data-label="Trạng thái"><span className={`badge ${club.is_active ? "badge-green" : "badge-gray"}`}>{club.is_active ? "Đang sử dụng" : "Ngừng sử dụng"}</span></td>
+                    <td data-label="Thao tác">
                       <div className="flex gap-2">
                         <Button size="sm" variant="outline" loading={busy === club.id} onClick={() => provision(club.id)}>
                           {account ? "Đặt lại 123456" : "Cấp tài khoản"}
