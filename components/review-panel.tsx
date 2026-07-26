@@ -56,7 +56,7 @@ export function ReviewPanel({
         <div className="decision-buttons">
           <Button
             variant="primary"
-            style={{ background: "var(--color-success-text)", borderColor: "var(--color-success-text)" }}
+            className="btn-passed"
             loading={busy}
             onClick={() => decide("passed")}
           >
@@ -64,7 +64,7 @@ export function ReviewPanel({
           </Button>
           <Button
             variant="outline"
-            style={{ borderColor: "var(--color-warning-border)", color: "var(--color-warning-text)", background: "var(--color-warning-bg)" }}
+            className="btn-revision"
             loading={busy}
             onClick={() => decide("revision")}
           >

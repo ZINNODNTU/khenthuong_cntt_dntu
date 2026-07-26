@@ -77,23 +77,9 @@ export function RegisterForm({
 
         <div className="field">
           <label className="field-label" htmlFor="register-student-id">Mã số sinh viên</label>
-          <div className="input" style={{ display: "flex", alignItems: "center", padding: 0, overflow: "hidden", height: 40 }}>
-            <input
-              id="register-student-id"
-              name="studentId"
-              type="text"
-              required
-              minLength={5}
-              maxLength={20}
-              inputMode="numeric"
-              autoComplete="username"
-              placeholder="Nhập MSSV"
-              pattern="[0-9]+"
-              style={{ border: "none", outline: "none", flex: 1, height: "100%", padding: "0 var(--space-3)", fontSize: "inherit" }}
-            />
-            <span style={{ padding: "0 var(--space-3)", background: "var(--color-muted)", color: "var(--color-text-secondary)", fontSize: "var(--font-size-sm)", height: "100%", display: "flex", alignItems: "center", borderLeft: "1px solid var(--color-border)" }}>
-              @dntu.edu.vn
-            </span>
+          <div className="input-group">
+            <input className="input-group-field" id="register-student-id" name="studentId" type="text" required minLength={5} maxLength={20} inputMode="numeric" autoComplete="username" placeholder="Nhập MSSV" pattern="[0-9]+" />
+            <span className="input-group-suffix">@dntu.edu.vn</span>
           </div>
           <span className="field-helper">Mỗi MSSV chỉ được tạo một tài khoản duy nhất.</span>
         </div>
@@ -109,7 +95,7 @@ export function RegisterForm({
           <input className="input" id="register-confirm-password" name="confirmPassword" type="password" required minLength={10} maxLength={128} autoComplete="new-password" />
         </div>
 
-        <Button variant="primary" loading={busy} style={{ width: "100%" }}>
+        <Button variant="primary" loading={busy} className="w-full">
           {busy ? "Đang kiểm tra và tạo tài khoản..." : "Tạo tài khoản"}
         </Button>
       </form>

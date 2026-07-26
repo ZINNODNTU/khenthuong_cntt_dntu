@@ -54,7 +54,7 @@ export function ChangePasswordForm() {
         <input className="input" id="pw-confirm" name="confirmPassword" type="password" minLength={10} required autoComplete="new-password" />
       </div>
 
-      <Button variant="primary" loading={busy} style={{ width: "100%" }}>
+      <Button variant="primary" loading={busy} className="w-full">
         {busy ? "Đang cập nhật..." : "Đổi mật khẩu"}
       </Button>
     </form>

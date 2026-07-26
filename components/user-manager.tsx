@@ -89,14 +89,14 @@ export function UserManager({
 
   return (
     <>
-      <form className="card card-body" onSubmit={create} style={{ marginBottom: "var(--space-4)" }}>
-        <div style={{ marginBottom: "var(--space-4)" }}>
-          <h3 className="font-semibold" style={{ fontSize: "var(--font-size-lg)" }}>Tạo tài khoản cá nhân hoặc cán bộ</h3>
+      <form className="card card-body mb-4" onSubmit={create}>
+        <div className="mb-4">
+          <h3 className="font-semibold text-lg">Tạo tài khoản cá nhân hoặc cán bộ</h3>
           <p className="text-sm text-secondary">
             Tài khoản Chi đoàn được cấp tại{" "}
-            <Link href="/branches" style={{ color: "var(--color-primary)", fontWeight: "var(--font-weight-medium)" }}>Quản lý Chi đoàn</Link>
+            <Link href="/branches" className="link-primary">Quản lý Chi đoàn</Link>
             ; tài khoản CLB được cấp tại{" "}
-            <Link href="/clubs" style={{ color: "var(--color-primary)", fontWeight: "var(--font-weight-medium)" }}>Quản lý CLB</Link>.
+            <Link href="/clubs" className="link-primary">Quản lý CLB</Link>.
           </p>
         </div>
 
@@ -135,7 +135,7 @@ export function UserManager({
           )}
         </div>
 
-        <Button variant="primary" loading={busy === "new"} style={{ marginTop: "var(--space-4)" }}>
+        <Button variant="primary" loading={busy === "new"} className="mt-4">
           Tạo tài khoản
         </Button>
       </form>

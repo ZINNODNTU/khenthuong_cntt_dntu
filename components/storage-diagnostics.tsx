@@ -28,10 +28,10 @@ export function StorageDiagnostics({ initial }: { initial: Diagnostic }) {
   }
 
   return (
-    <section className="card card-body" style={{ marginTop: "var(--space-4)" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-3)", marginBottom: "var(--space-4)" }}>
+    <section className="card card-body mt-4">
+      <div className="card card-header-storage">
         <div>
-          <h3 className="font-semibold" style={{ fontSize: "var(--font-size-lg)" }}>Kho lưu trữ hình ảnh</h3>
+          <h3 className="font-semibold text-lg">Kho lưu trữ hình ảnh</h3>
           <p className="text-sm text-secondary">Kiểm tra kết nối trước khi tiếp nhận hồ sơ có ảnh.</p>
         </div>
         <Button variant="outline" size="sm" loading={busy} onClick={retry}>Kiểm tra lại</Button>
@@ -39,9 +39,9 @@ export function StorageDiagnostics({ initial }: { initial: Diagnostic }) {
 
       <div className={`notice ${result.ok ? "notice-success" : "notice-error"}`}>
         <b>{result.ok ? "Kết nối thành công" : "Kết nối thất bại"}</b>
-        <div style={{ marginTop: 6 }}>{result.message}</div>
-        {result.ok && result.folderName && <div className="text-xs text-secondary" style={{ marginTop: 6 }}>Thư mục: {result.folderName}</div>}
-        {!result.ok && result.code && <div className="text-xs text-secondary" style={{ marginTop: 6 }}>Mã kiểm tra: {result.code}</div>}
+        <div className="storage-detail">{result.message}</div>
+        {result.ok && result.folderName && <div className="text-xs text-secondary storage-detail">Thư mục: {result.folderName}</div>}
+        {!result.ok && result.code && <div className="text-xs text-secondary storage-detail">Mã kiểm tra: {result.code}</div>}
       </div>
     </section>
   );

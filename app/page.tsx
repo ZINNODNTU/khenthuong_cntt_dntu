@@ -48,3 +48,4 @@ export default async function Home() {
 
   redirect(roleHome((profile as Profile).role));
 }
+

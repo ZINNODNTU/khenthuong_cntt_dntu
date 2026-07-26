@@ -6,6 +6,7 @@ import { IMAGE_MIME_TYPES } from "@/lib/constants";
 import type { Club, EvaluationPeriod, SubmissionScope } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Textarea, Input, Select, Field } from "@/components/ui/input";
+import { Stepper } from "@/components/ui/stepper";
 
 type ImageItem = { file: File; url: string };
 type Mode = "individual" | "branch_collective" | "club_collective";
@@ -38,6 +39,15 @@ export function ApplicationForm({
   const [mainImages, setMainImages] = useState<ImageItem[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [step, setStep] = useState(0);
+  const sections = ["Loại hồ sơ", "Thông tin", "Báo cáo", "Hoạt động", "Khen thưởng", "Kiểm tra"];
+  const sectionRefs = useRef<(HTMLElement | null)[]>([]);
+
+  function goStep(i: number) {
+    setStep(i);
+    const el = sectionRefs.current[i];
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   const currentPeriod = periods.find((p) => p.id === periodId) || periods[0];
   const isIndividual = mode === "individual";
@@ -186,6 +196,7 @@ export function ApplicationForm({
 
   return (
     <form onSubmit={(e) => submit(e, actionRef.current)}>
+      <Stepper steps={sections.map(label => ({ label }))} current={step} onSelect={goStep} />
       <div className="form-layout">
         <div className="form-main">
           {error && <div className="notice notice-error"><TriangleAlert size={17} />{error}</div>}
@@ -205,7 +216,7 @@ export function ApplicationForm({
           </section>
 
           {/* Section 1 */}
-          <section className="card form-section">
+          <section className="card form-section" ref={(el) => { sectionRefs.current[0] = el; }}>
             <h3>1. Đợt xét và loại hồ sơ</h3>
             <p>Mỗi đối tượng chỉ có một hồ sơ trong một đợt xét.</p>
             <div className="field" style={{ marginBottom: "var(--space-4)" }}>
@@ -217,8 +228,7 @@ export function ApplicationForm({
             </div>
             <div className="flex gap-3 flex-wrap">
               {submissionScope === "individual" && branchCode && currentPeriod?.allow_individual && (
-                <button type="button" className={`card card-body ${mode === "individual" ? "" : ""}`}
-                  style={{ border: `2px solid ${mode === "individual" ? "var(--color-primary)" : "var(--color-border)"}`, background: mode === "individual" ? "var(--color-info-bg)" : "var(--color-surface)", cursor: "pointer", flex: 1, minWidth: 180 }}
+                <button type="button" className={`mode-btn ${mode === "individual" ? "is-active" : ""}`}
                   onClick={() => setMode("individual")}
                 >
                   <div className="font-semibold text-sm">Hồ sơ cá nhân</div>
@@ -226,8 +236,7 @@ export function ApplicationForm({
                 </button>
               )}
               {submissionScope === "branch" && branchCode && currentPeriod?.allow_branch_collective && (
-                <button type="button" className="card card-body"
-                  style={{ border: `2px solid ${mode === "branch_collective" ? "var(--color-primary)" : "var(--color-border)"}`, background: mode === "branch_collective" ? "var(--color-info-bg)" : "var(--color-surface)", cursor: "pointer", flex: 1, minWidth: 180 }}
+                <button type="button" className={`mode-btn ${mode === "branch_collective" ? "is-active" : ""}`}
                   onClick={() => setMode("branch_collective")}
                 >
                   <div className="font-semibold text-sm">Tập thể Chi đoàn</div>
@@ -235,8 +244,7 @@ export function ApplicationForm({
                 </button>
               )}
               {submissionScope === "club" && club && currentPeriod?.allow_club_collective && (
-                <button type="button" className="card card-body"
-                  style={{ border: `2px solid ${mode === "club_collective" ? "var(--color-primary)" : "var(--color-border)"}`, background: mode === "club_collective" ? "var(--color-info-bg)" : "var(--color-surface)", cursor: "pointer", flex: 1, minWidth: 180 }}
+                <button type="button" className={`mode-btn ${mode === "club_collective" ? "is-active" : ""}`}
                   onClick={() => setMode("club_collective")}
                 >
                   <div className="font-semibold text-sm">Tập thể CLB</div>
@@ -247,7 +255,7 @@ export function ApplicationForm({
           </section>
 
           {/* Section 2 */}
-          <section className="card form-section">
+          <section className="card form-section" ref={(el) => { sectionRefs.current[1] = el; }}>
             <h3>2. Thông tin chung</h3>
             <p>Đơn vị được cố định theo tài khoản đăng nhập.</p>
             <div className="form-grid">
@@ -290,7 +298,7 @@ export function ApplicationForm({
                       <div className="upload-note">Chọn 01 ảnh chính diện, rõ khuôn mặt.</div>
                     </div>
                     {portraitImages.length > 0 && (
-                      <div className="image-grid portrait" style={{ marginTop: "var(--space-2)" }}>
+                      <div className="image-grid portrait mt-2">
                         {portraitImages.map((x, i) => (
                           <div className="image-tile" key={i}>
                             <img src={x.url} alt="" />
@@ -306,7 +314,7 @@ export function ApplicationForm({
           </section>
 
           {/* Section 3: Report */}
-          <section className="card form-section">
+          <section className="card form-section" ref={(el) => { sectionRefs.current[2] = el; }}>
             <h3>3. Báo cáo thành tích</h3>
             <p>Nêu rõ kết quả, vai trò và hiệu quả đạt được.</p>
             <div className="form-grid">
@@ -337,7 +345,7 @@ export function ApplicationForm({
                   <div className="upload-note"><strong>{mainImages.length} ảnh đã chọn.</strong> Ưu tiên ảnh quyết định, xác nhận kết quả hoặc toàn cảnh hoạt động.</div>
                 </div>
                 {mainImages.length > 0 && (
-                  <div className="image-grid" style={{ marginTop: "var(--space-2)" }}>
+                  <div className="image-grid mt-2">
                     {mainImages.map((x, i) => (
                       <div className="image-tile" key={i}>
                         <img src={x.url} alt="" />
@@ -351,8 +359,8 @@ export function ApplicationForm({
           </section>
 
           {/* Section 4: Activities */}
-          <section className="card form-section">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-4)" }}>
+          <section className="card form-section" ref={(el) => { sectionRefs.current[3] = el; }}>
+            <div className="section-toolbar">
               <div>
                 <h3>4. Hoạt động tham gia</h3>
                 <p>Mỗi hoạt động có bộ ảnh minh chứng riêng.</p>
@@ -405,7 +413,7 @@ export function ApplicationForm({
                           <div className="upload-note"><strong>{a.images.length} ảnh đã chọn.</strong> Nộp thư mời/xác nhận tham gia và ảnh thể hiện vai trò hoặc kết quả.</div>
                         </div>
                         {a.images.length > 0 && (
-                          <div className="image-grid" style={{ marginTop: "var(--space-2)" }}>
+                          <div className="image-grid mt-2">
                             {a.images.map((x, i) => (
                               <div className="image-tile" key={i}>
                                 <img src={x.url} alt="" />
@@ -426,8 +434,8 @@ export function ApplicationForm({
           </section>
 
           {/* Section 5: Awards */}
-          <section className="card form-section">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-4)" }}>
+          <section className="card form-section" ref={(el) => { sectionRefs.current[4] = el; }}>
+            <div className="section-toolbar">
               <div>
                 <h3>5. Thành tích đã được khen thưởng</h3>
                 <p>Kê khai giấy chứng nhận hoặc bằng khen đã nhận.</p>
@@ -476,7 +484,7 @@ export function ApplicationForm({
                       <div className="upload-note"><strong>{a.images.length} ảnh đã chọn.</strong> Chụp trọn văn bản, rõ số quyết định, tên người nhận và đơn vị cấp.</div>
                     </div>
                     {a.images.length > 0 && (
-                      <div className="image-grid" style={{ marginTop: "var(--space-2)" }}>
+                      <div className="image-grid mt-2">
                         {a.images.map((x, i) => (
                           <div className="image-tile" key={i}>
                             <img src={x.url} alt="" />
@@ -493,7 +501,7 @@ export function ApplicationForm({
           </section>
 
           {/* Section 6: Summary */}
-          <section className="card form-section evidence-summary">
+          <section className="card form-section evidence-summary" ref={(el) => { sectionRefs.current[5] = el; }}>
             <div className="evidence-summary-heading">
               <div><span className="evidence-guide-eyebrow">TỰ ĐỘNG CẬP NHẬT</span><h3>6. Bảng tóm tắt thông tin nộp</h3><p>Số liệu lấy trực tiếp từ nội dung và ảnh đã thêm.</p></div>
               <strong>{evidenceStats.completion}%<small>hoàn thiện</small></strong>
@@ -513,9 +521,9 @@ export function ApplicationForm({
         </div>
 
         {/* Sidebar */}
-        <aside className="form-sidebar">
-          <div className="card card-body" style={{ marginBottom: "var(--space-4)" }}>
-            <h4 className="font-semibold mb-1" style={{ fontSize: "var(--font-size-base)" }}>Gửi hồ sơ</h4>
+          <aside className="form-sidebar">
+          <div className="sidebar-card">
+            <h4 className="sidebar-card-title">Gửi hồ sơ</h4>
             <p className="text-sm text-secondary mb-4">Sau khi gửi, không thể tạo hồ sơ thứ hai cho cùng đối tượng trong đợt này.</p>
             <div className="flex flex-col gap-3">
               <Button variant="primary" loading={busy} onClick={() => { actionRef.current = "submitted"; }}>
@@ -527,8 +535,8 @@ export function ApplicationForm({
             </div>
           </div>
 
-          <div className="card card-body">
-            <h4 className="font-semibold mb-3" style={{ fontSize: "var(--font-size-base)" }}>Kiểm tra trước khi gửi</h4>
+          <div className="sidebar-card">
+            <h4 className="sidebar-card-title">Kiểm tra trước khi gửi</h4>
             <div className="evidence-check-progress"><span style={{ width: `${evidenceStats.completion}%` }} /></div>
             <div className="evidence-checklist">
               <div className={portraitImages.length === 1 || !isIndividual ? "is-done" : ""}>{portraitImages.length === 1 || !isIndividual ? "✓" : "○"} Ảnh chân dung</div>

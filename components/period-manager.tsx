@@ -89,9 +89,9 @@ export function PeriodManager({ periods }: { periods: EvaluationPeriod[] }) {
 
   return (
     <>
-      <form className="card card-body" onSubmit={create} style={{ marginBottom: "var(--space-4)" }}>
-        <div style={{ marginBottom: "var(--space-4)" }}>
-          <h3 className="font-semibold" style={{ fontSize: "var(--font-size-lg)" }}>Tạo đợt xét thành tích</h3>
+      <form className="card card-body mb-4" onSubmit={create}>
+        <div className="mb-4">
+          <h3 className="font-semibold text-lg">Tạo đợt xét thành tích</h3>
           <p className="text-sm text-secondary">Quy định thời gian nhận hồ sơ và loại hồ sơ được phép nộp.</p>
         </div>
 
@@ -134,7 +134,7 @@ export function PeriodManager({ periods }: { periods: EvaluationPeriod[] }) {
           </div>
           <div className="field span-2">
             <label className="field-label">Loại hồ sơ được tiếp nhận</label>
-            <div className="flex gap-3 flex-wrap" style={{ marginTop: "var(--space-2)" }}>
+            <div className="flex gap-3 flex-wrap mt-2">
               <Checkbox id="allowIndividual" name="allowIndividual" defaultChecked label="Cá nhân" />
               <Checkbox id="allowBranchCollective" name="allowBranchCollective" defaultChecked label="Tập thể Chi đoàn" />
               <Checkbox id="allowClubCollective" name="allowClubCollective" defaultChecked label="Tập thể CLB" />
@@ -142,7 +142,7 @@ export function PeriodManager({ periods }: { periods: EvaluationPeriod[] }) {
           </div>
         </div>
 
-        <Button variant="primary" loading={busy === "new"} style={{ marginTop: "var(--space-4)" }}>
+        <Button variant="primary" loading={busy === "new"} className="mt-4">
           Tạo đợt xét
         </Button>
       </form>

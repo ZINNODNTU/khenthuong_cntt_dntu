@@ -2,7 +2,10 @@
   "geometry": {
     "viewport": 1440,
     "pageWidth": 1440,
-    "offenders": []
+    "offenders": [
+      "div.login-bg-blob login-bg-blob-1",
+      "div.login-bg-blob login-bg-blob-2"
+    ]
   },
   "violations": [],
   "consoleErrors": [],

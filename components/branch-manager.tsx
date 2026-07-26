@@ -87,9 +87,9 @@ export function BranchManager({
   return (
     <>
       {canManage && (
-        <form className="card card-body" onSubmit={addBranch} style={{ marginBottom: "var(--space-4)" }}>
-          <div style={{ marginBottom: "var(--space-4)" }}>
-            <h3 className="font-semibold" style={{ fontSize: "var(--font-size-lg)" }}>Thêm Chi đoàn và cấp tài khoản</h3>
+        <form className="card card-body mb-4" onSubmit={addBranch}>
+          <div className="mb-4">
+            <h3 className="font-semibold text-lg">Thêm Chi đoàn và cấp tài khoản</h3>
             <p className="text-sm text-secondary">Hệ thống tự tạo email theo mã Chi đoàn, mật khẩu mặc định 123456 và yêu cầu đổi mật khẩu ở lần đăng nhập đầu tiên.</p>
           </div>
 
@@ -119,7 +119,7 @@ export function BranchManager({
             </div>
           </div>
 
-          <div className="flex gap-2 flex-wrap" style={{ marginTop: "var(--space-4)" }}>
+          <div className="flex gap-2 flex-wrap mt-4">
             <Button variant="primary" loading={busyCode === "new"}>
               Thêm và cấp tài khoản
             </Button>

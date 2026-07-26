@@ -7,6 +7,7 @@ import { LogIn, Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { loginEmailFromInput } from "@/lib/identity";
 import { Button } from "@/components/ui/button";
+import { Field, Input } from "@/components/ui/input";
 
 function queryMessage(errorCode: string | null, confirmed: string | null) {
   if (confirmed === "1") {
@@ -65,60 +66,47 @@ export function LoginForm({ signupEnabled }: { signupEnabled: boolean }) {
 
   return (
     <div className="login-form">
-      {error && <div className="notice notice-error">{error}</div>}
+      {error && <div className="notice notice-error" role="alert">{error}</div>}
       {!error && feedback && (
-        <div className={feedback.type === "success" ? "notice notice-success" : "notice notice-error"}>
+        <div className={feedback.type === "success" ? "notice notice-success" : "notice notice-error"} role="alert">
           {feedback.text}
         </div>
       )}
 
-      <form className="login-form" onSubmit={submit}>
-        <div className="field">
-          <label className="field-label" htmlFor="login-email">
-            MSSV, mã đơn vị hoặc email
-          </label>
-          <input
+      <form onSubmit={submit} noValidate>
+        <Field label="MSSV, mã đơn vị hoặc email" htmlFor="login-email" required helper="Có thể nhập phần trước @dntu.edu.vn hoặc nhập đầy đủ email.">
+          <Input
             id="login-email"
-            className="input"
             type="text"
             name="email"
             required
             placeholder="Ví dụ: 12345678 hoặc 22DTH1"
             autoComplete="username"
           />
-          <span className="field-helper">
-            Có thể nhập phần trước @dntu.edu.vn hoặc nhập đầy đủ email.
-          </span>
-        </div>
+        </Field>
 
-        <div className="field">
-          <label className="field-label" htmlFor="login-password">
-            Mật khẩu
-          </label>
-          <div style={{ position: "relative" }}>
-            <input
+        <Field label="Mật khẩu" htmlFor="login-password" required>
+          <div className="password-wrap">
+            <Input
               id="login-password"
-              className="input"
               type={showPassword ? "text" : "password"}
               name="password"
               required
               minLength={6}
               autoComplete="current-password"
-              style={{ paddingRight: 44 }}
             />
             <button
               type="button"
-              className="btn btn-ghost btn-icon btn-sm"
-              style={{ position: "absolute", right: 4, top: 4, width: 32, height: 32 }}
+              className="password-toggle"
               aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
               onClick={() => setShowPassword((v) => !v)}
             >
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
-        </div>
+        </Field>
 
-        <Button variant="primary" loading={loading} style={{ width: "100%" }}>
+        <Button variant="primary" loading={loading} className="w-full">
           {!loading && <LogIn size={16} />}
           {loading ? "Đang đăng nhập..." : "Đăng nhập"}
         </Button>
