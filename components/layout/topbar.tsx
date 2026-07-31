@@ -1,8 +1,8 @@
 "use client";
 
-import { Menu, Moon, Sun, HelpCircle, LogOut, ChevronRight } from "lucide-react";
+import { Bell, ChevronRight, HelpCircle, LogOut, Menu, Moon, Search, Sun, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import type { UserRole, Profile } from "@/lib/types";
+import type { Profile, UserRole } from "@/lib/types";
 
 function roleLabel(role: UserRole) {
   if (role === "admin") return "Quản trị viên";
@@ -11,9 +11,9 @@ function roleLabel(role: UserRole) {
 }
 
 function portalTitle(role: UserRole) {
-  if (role === "admin") return "Không gian quản trị";
-  if (role === "reviewer") return "Không gian xét duyệt";
-  return "Không gian nộp hồ sơ";
+  if (role === "admin") return "Quản trị";
+  if (role === "reviewer") return "Xét duyệt";
+  return "Nộp hồ sơ";
 }
 
 function initials(profile: Profile) {
@@ -35,21 +35,23 @@ export function Topbar({
 }) {
   const [dark, setDark] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     try {
       const t = window.localStorage.getItem("cntt-theme");
       setDark(t === "dark" || (!t && window.matchMedia("(prefers-color-scheme:dark)").matches));
-    } catch {}
+    } catch { /* noop */ }
   }, []);
 
   function toggleTheme() {
     setDark((prev) => {
       const next = !prev;
       const theme = next ? "dark" : "light";
-      try { window.localStorage.setItem("cntt-theme", theme); } catch {}
+      try { window.localStorage.setItem("cntt-theme", theme); } catch { /* noop */ }
       document.documentElement.setAttribute("data-theme", theme);
       return next;
     });
@@ -57,35 +59,32 @@ export function Topbar({
 
   useEffect(() => {
     if (!userMenuOpen) return;
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") setUserMenuOpen(false);
-    }
+    function onKeyDown(e: KeyboardEvent) { if (e.key === "Escape") setUserMenuOpen(false); }
     function onClick(e: MouseEvent) {
       if (
         dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
         triggerRef.current && !triggerRef.current.contains(e.target as Node)
-      ) {
-        setUserMenuOpen(false);
-      }
+      ) setUserMenuOpen(false);
     }
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("mousedown", onClick);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("mousedown", onClick);
-    };
+    return () => { window.removeEventListener("keydown", onKeyDown); window.removeEventListener("mousedown", onClick); };
   }, [userMenuOpen]);
+
+  useEffect(() => {
+    if (searchOpen) searchRef.current?.focus();
+  }, [searchOpen]);
+
+  function handleSearch(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const q = new FormData(e.currentTarget).get("q") as string;
+    if (q?.trim()) window.location.href = `/admin/search?q=${encodeURIComponent(q.trim())}`;
+  }
 
   return (
     <header className="topbar">
       <div className="topbar-left">
-        <button
-          type="button"
-          className="topbar-menu-btn"
-          aria-label="Mở menu"
-          aria-expanded={false}
-          onClick={onMenuClick}
-        >
+        <button type="button" className="topbar-menu-btn" aria-label="Mở menu" aria-expanded={false} onClick={onMenuClick}>
           <Menu size={20} />
         </button>
         <div className="topbar-info">
@@ -100,7 +99,27 @@ export function Topbar({
       </div>
 
       <div className="topbar-right">
+        {/* Global search — togglable, only on desktop */}
+        <div className={`topbar-search-wrap ${searchOpen ? "is-open" : ""}`}>
+          {searchOpen && (
+            <form className="topbar-search-form" onSubmit={handleSearch} role="search">
+              <Search size={14} className="topbar-search-icon" />
+              <input ref={searchRef} className="topbar-search-input" name="q" type="search" placeholder="Tìm kiếm toàn hệ thống..." aria-label="Tìm kiếm" autoComplete="off" />
+              <button type="button" className="topbar-search-close" aria-label="Đóng tìm kiếm" onClick={() => setSearchOpen(false)}><X size={14} /></button>
+            </form>
+          )}
+          {!searchOpen && (
+            <button type="button" className="btn btn-ghost btn-icon topbar-desktop-only" aria-label="Mở tìm kiếm" title="Tìm kiếm" onClick={() => setSearchOpen(true)}>
+              <Search size={18} />
+            </button>
+          )}
+        </div>
+
         <div className="topbar-actions topbar-desktop-only" aria-label="Công cụ nhanh">
+          <button type="button" className="btn btn-ghost btn-icon topbar-notif-btn" aria-label="Thông báo" title="Thông báo">
+            <Bell size={18} />
+            <span className="topbar-notif-dot" aria-hidden="true" />
+          </button>
           <button type="button" className="btn btn-ghost btn-icon" aria-label={dark ? "Giao diện sáng" : "Giao diện tối"} title={dark ? "Chế độ sáng" : "Chế độ tối"} onClick={toggleTheme}>
             {dark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
@@ -122,14 +141,7 @@ export function Topbar({
       </div>
 
       <div className="topbar-mobile-actions">
-        <button
-          ref={triggerRef}
-          type="button"
-          className="btn btn-ghost topbar-user-trigger"
-          aria-label="Thông tin người dùng"
-          aria-expanded={userMenuOpen}
-          onClick={() => setUserMenuOpen((prev) => !prev)}
-        >
+        <button ref={triggerRef} type="button" className="btn btn-ghost topbar-user-trigger" aria-label="Thông tin người dùng" aria-expanded={userMenuOpen} onClick={() => setUserMenuOpen((prev) => !prev)}>
           <span className="topbar-avatar-mini">{initials(profile)}</span>
         </button>
 

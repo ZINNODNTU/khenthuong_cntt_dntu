@@ -1,107 +1,115 @@
 "use client";
+
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Profile } from "@/lib/types";
 import { Button } from "@/components/ui/button";
+import { DataTable } from "@/components/ui/data-table";
+import type { ColumnDef } from "@/components/ui/data-table";
 import { Modal } from "@/components/ui/modal";
-import { Checkbox } from "@/components/ui/input";
 
 const roleNames = { admin: "Quản trị viên", reviewer: "Cán bộ xét duyệt", submitter: "Người nộp hồ sơ" } as const;
 const scopeNames = { individual: "Cá nhân", branch: "Đại diện Chi đoàn", club: "Đại diện CLB" } as const;
 
+function statusHtml(isActive: boolean) {
+  return `<span class="badge ${isActive ? "badge-green" : "badge-red"}">${isActive ? "Đang hoạt động" : "Đã khóa"}</span>`;
+}
+
+const columns: ColumnDef[] = [
+  { key: "full_name", label: "Họ tên", sortable: true },
+  { key: "email", label: "Email", hideOnMobile: true, sortable: true },
+  { key: "role", label: "Vai trò", sortable: true },
+  { key: "submission_scope", label: "Phạm vi", hideOnMobile: true },
+  { key: "branch_code", label: "Đơn vị", hideOnMobile: true },
+  { key: "must_change_password", label: "Mật khẩu" },
+  { key: "is_active", label: "Trạng thái" },
+];
+
 export function UserManager({
-  users,
-  branches,
-  currentUserId,
+  users, branches, currentUserId,
 }: {
-  users: Profile[];
-  branches: string[];
-  currentUserId: string;
+  users: Profile[]; branches: string[]; currentUserId: string;
 }) {
   const router = useRouter();
   const [role, setRole] = useState<Profile["role"]>("submitter");
-  const [message, setMessage] = useState("");
+  const [toast, setToast] = useState<string | null>(null);
   const [busy, setBusy] = useState("");
   const [resetTarget, setResetTarget] = useState<Profile | null>(null);
   const [newPassword, setNewPassword] = useState("");
 
+  function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(null), 4000); }
+
   async function create(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy("new");
-    setMessage("");
     const form = new FormData(event.currentTarget);
     const r = await fetch("/api/admin/users", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        email: form.get("email"),
-        fullName: form.get("fullName"),
-        password: form.get("password"),
-        role,
+        email: form.get("email"), fullName: form.get("fullName"),
+        password: form.get("password"), role,
         submissionScope: "individual",
-        branchCode: role === "submitter" ? form.get("branchCode") : "",
-        clubId: null,
+        branchCode: role === "submitter" ? form.get("branchCode") : "", clubId: null,
       }),
     });
     const d = await r.json();
-    setMessage(r.ok ? "Đã tạo tài khoản và xác nhận email." : d.error || "Không thể tạo tài khoản");
     setBusy("");
-    if (r.ok) {
-      event.currentTarget.reset();
-      router.refresh();
-    }
+    if (r.ok) { event.currentTarget.reset(); router.refresh(); showToast("Đã tạo tài khoản."); }
+    else { showToast(d.error || "Không thể tạo"); }
+  }
+
+  async function toggle(user: Profile) {
+    setBusy(user.id);
+    const r = await fetch("/api/admin/users", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "set_active", userId: user.id, isActive: !user.is_active }),
+    });
+    setBusy("");
+    if (r.ok) { router.refresh(); showToast("Đã cập nhật trạng thái."); }
+    else { showToast("Không thể cập nhật"); }
   }
 
   async function resetPassword(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!resetTarget) return;
     setBusy(resetTarget.id);
-    setMessage("");
     const r = await fetch("/api/admin/users", {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ action: "reset_password", userId: resetTarget.id, password: newPassword }),
     });
-    const d = await r.json();
-    setMessage(r.ok ? `Đã đặt lại mật khẩu cho ${resetTarget.email}.` : d.error || "Không thể đặt lại mật khẩu");
     setBusy("");
-    if (r.ok) {
-      setResetTarget(null);
-      setNewPassword("");
-      router.refresh();
-    }
+    if (r.ok) { setResetTarget(null); setNewPassword(""); router.refresh(); showToast("Đã đặt lại mật khẩu."); }
+    else { showToast("Không thể đặt lại"); }
   }
 
-  async function toggle(user: Profile) {
-    setBusy(user.id);
-    setMessage("");
-    const r = await fetch("/api/admin/users", {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ action: "set_active", userId: user.id, isActive: !user.is_active }),
-    });
-    const d = await r.json();
-    setMessage(r.ok ? "Đã cập nhật trạng thái tài khoản." : d.error || "Không thể cập nhật tài khoản");
-    setBusy("");
-    if (r.ok) router.refresh();
-  }
+  const rows = users.map((u) => ({
+    id: u.id,
+    full_name: u.id === currentUserId ? `${u.full_name} (đang đăng nhập)` : u.full_name,
+    email: u.email,
+    role: roleNames[u.role],
+    submission_scope: u.role === "submitter" ? scopeNames[u.submission_scope] : "—",
+    branch_code: u.branch_code || (u.club_id ? "CLB" : "—"),
+    must_change_password: u.must_change_password ? "Phải đổi lần đầu" : "Đã thiết lập",
+    is_active: u.is_active ? "Đang hoạt động" : "Đã khóa",
+  }));
 
   return (
     <>
+      {/* Toast */}
+      {toast && <div className="toast" role="alert">{toast}</div>}
+
+      {/* Create form */}
       <form className="card card-body mb-4" onSubmit={create}>
         <div className="mb-4">
-          <h3 className="font-semibold text-lg">Tạo tài khoản cá nhân hoặc cán bộ</h3>
+          <h3 className="font-semibold text-lg">Tạo tài khoản</h3>
           <p className="text-sm text-secondary">
-            Tài khoản Chi đoàn được cấp tại{" "}
-            <Link href="/branches" className="link-primary">Quản lý Chi đoàn</Link>
-            ; tài khoản CLB được cấp tại{" "}
-            <Link href="/clubs" className="link-primary">Quản lý CLB</Link>.
+            Tài khoản Chi đoàn được cấp tại <Link href="/branches" className="link-primary">Quản lý Chi đoàn</Link>; CLB tại <Link href="/clubs" className="link-primary">Quản lý CLB</Link>.
           </p>
         </div>
-
-        {message && <div className={`notice ${message.startsWith("Đã") ? "notice-success" : "notice-error"} mb-4`}>{message}</div>}
-
         <div className="form-grid">
           <div className="field">
             <label className="field-label">Họ và tên *</label>
@@ -110,7 +118,7 @@ export function UserManager({
           <div className="field">
             <label className="field-label">Email *</label>
             <input className="input" name="email" type="email" required placeholder={role === "submitter" ? "MSSV@dntu.edu.vn" : "canbo@dntu.edu.vn"} />
-            {role === "submitter" && <span className="field-helper">MSSV được lấy tự động từ phần số trước @dntu.edu.vn.</span>}
+            {role === "submitter" && <span className="field-helper">MSSV lấy từ phần số trước @dntu.edu.vn.</span>}
           </div>
           <div className="field">
             <label className="field-label">Mật khẩu ban đầu *</label>
@@ -134,74 +142,32 @@ export function UserManager({
             </div>
           )}
         </div>
-
-        <Button variant="primary" loading={busy === "new"} className="mt-4">
-          Tạo tài khoản
-        </Button>
+        <Button variant="primary" loading={busy === "new"} className="mt-4">Tạo tài khoản</Button>
       </form>
 
-      <div className="card card-body">
-        <div className="table-wrap table-responsive-card">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Họ tên</th>
-                <th>Email</th>
-                <th>Vai trò</th>
-                <th>Phạm vi</th>
-                <th>Đơn vị</th>
-                <th>Mật khẩu</th>
-                <th>Trạng thái</th>
-                <th>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user) => (
-                <tr key={user.id}>
-                  <td data-label="Họ tên">
-                    <b>{user.full_name}</b>
-                    {user.id === currentUserId && <br />}
-                    {user.id === currentUserId && <span className="text-xs text-secondary">Tài khoản đang đăng nhập</span>}
-                  </td>
-                  <td data-label="Email" className="text-sm">{user.email}</td>
-                  <td data-label="Vai trò" className="text-sm">{roleNames[user.role]}</td>
-                  <td data-label="Phạm vi" className="text-sm">{user.role === "submitter" ? scopeNames[user.submission_scope] : "—"}</td>
-                  <td data-label="Đơn vị" className="text-sm">{user.branch_code || (user.club_id ? "CLB" : "—")}</td>
-                  <td data-label="Mật khẩu">
-                    {user.must_change_password ? (
-                      <span className="badge badge-yellow">Phải đổi lần đầu</span>
-                    ) : (
-                      <span className="text-sm text-secondary">Đã thiết lập</span>
-                    )}
-                  </td>
-                  <td data-label="Trạng thái">
-                    <span className={`badge ${user.is_active ? "badge-green" : "badge-red"}`}>
-                      {user.is_active ? "Đang hoạt động" : "Đã khóa"}
-                    </span>
-                  </td>
-                  <td data-label="Thao tác">
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => { setResetTarget(user); setNewPassword(""); }}>
-                        Đặt lại mật khẩu
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant={user.is_active ? "danger" : "primary"}
-                        loading={busy === user.id}
-                        disabled={user.id === currentUserId}
-                        onClick={() => toggle(user)}
-                      >
-                        {user.is_active ? "Khóa" : "Kích hoạt"}
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {/* Table */}
+      <DataTable
+        columns={columns}
+        data={rows as unknown as Record<string, unknown>[]}
+        clientSearch
+        searchPlaceholder="Tìm theo tên, email..."
+        selectable
+        rowActions={(u) => {
+          const profile = users.find((p) => p.id === u.id)!;
+          return (
+            <>
+              <button type="button" className="topbar-dropdown-item" role="menuitem" onClick={() => { setResetTarget(profile); setNewPassword(""); }}>
+                Đặt lại mật khẩu
+              </button>
+              <button type="button" className={`topbar-dropdown-item ${profile.is_active ? "topbar-dropdown-item-danger" : ""}`} role="menuitem" disabled={profile.id === currentUserId} onClick={() => toggle(profile)}>
+                {profile.is_active ? "Khóa tài khoản" : "Kích hoạt"}
+              </button>
+            </>
+          );
+        }}
+      />
 
+      {/* Reset password modal */}
       <Modal
         open={!!resetTarget}
         onClose={() => setResetTarget(null)}
@@ -210,27 +176,15 @@ export function UserManager({
         footer={
           <div className="flex gap-2">
             <Button variant="secondary" onClick={() => setResetTarget(null)}>Hủy</Button>
-            <Button variant="primary" loading={resetTarget ? busy === resetTarget.id : false} form="reset-form">
-              Xác nhận đặt lại
-            </Button>
+            <Button variant="primary" loading={resetTarget ? busy === resetTarget.id : false} form="reset-form">Xác nhận</Button>
           </div>
         }
       >
         <form id="reset-form" onSubmit={resetPassword}>
           <div className="field">
             <label className="field-label" htmlFor="new-password">Mật khẩu mới *</label>
-            <input
-              id="new-password"
-              className="input"
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              minLength={10}
-              required
-              autoFocus
-              autoComplete="new-password"
-            />
-            <span className="field-helper">Tối thiểu 10 ký tự, có chữ và số. Người dùng phải đổi lại sau lần đăng nhập tiếp theo.</span>
+            <input id="new-password" className="input" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} minLength={10} required autoFocus autoComplete="new-password" />
+            <span className="field-helper">Tối thiểu 10 ký tự. Người dùng phải đổi lại sau lần đăng nhập tiếp theo.</span>
           </div>
         </form>
       </Modal>

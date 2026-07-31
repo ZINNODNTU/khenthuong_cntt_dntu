@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createPeriodSchema, updatePeriodSchema } from "@/lib/validation";
 import { writeAudit } from "@/lib/audit";
 import { z } from "zod";
+import { createAdminClient } from "@/lib/supabase/admin";
 async function requireAdmin() {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -69,7 +70,10 @@ export async function DELETE(request: Request) {
     const { count } = await auth.supabase.from("applications").select("id", { count: "exact", head: true }).eq("evaluation_period_id", period.id);
     if (count) return NextResponse.json({ error: `Đợt xét còn ${count} hồ sơ. Hãy xóa các hồ sơ trước.` }, { status: 409 });
     await writeAudit(auth.supabase, auth.user.id, "period.delete", "evaluation_period", period.id, { name: period.name });
-    const { error } = await auth.supabase.from("evaluation_periods").delete().eq("id", period.id);
+    // Dùng service role để bypass RLS (thiếu policy delete trên bảng)
+    const admin = createAdminClient();
+    const { error, data: deleted } = await admin.from("evaluation_periods").delete().eq("id", period.id).select("id");
     if (error) return NextResponse.json({ error: error.message || "Không thể xóa đợt xét" }, { status: 400 });
+    if (!deleted || deleted.length === 0) return NextResponse.json({ error: "Xóa không thành công." }, { status: 500 });
     return NextResponse.json({ ok: true });
 }

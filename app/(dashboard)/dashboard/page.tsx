@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   Activity, AlertTriangle, ArrowRight, CalendarRange, CheckCircle2,
   CircleAlert, Clock3, FileCheck2, Files, Gauge, History, Radio, Users,
+  ShieldAlert, ImageIcon,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { requireRole } from "@/lib/auth";
@@ -47,10 +48,7 @@ function ageInDays(date: string, now: number) {
 }
 
 function StatusDonut({ completed, processing, revision, total }: {
-  completed: number;
-  processing: number;
-  revision: number;
-  total: number;
+  completed: number; processing: number; revision: number; total: number;
 }) {
   const safeTotal = Math.max(total, 1);
   const circumference = 2 * Math.PI * 42;
@@ -72,9 +70,7 @@ function StatusDonut({ completed, processing, revision, total }: {
               <circle
                 key={segment.label}
                 className={`monitor-donut-segment ${segment.className}`}
-                cx="50"
-                cy="50"
-                r="42"
+                cx="50" cy="50" r="42"
                 strokeDasharray={`${length} ${circumference - length}`}
                 strokeDashoffset={-offset}
               />
@@ -108,14 +104,19 @@ export default async function DashboardPage() {
     .order("updated_at", { ascending: false });
   if (open) appsQuery = appsQuery.eq("evaluation_period_id", open.id);
 
-  const [appsResult, branches, auditResult, countsResult] = await Promise.all([
+  const [appsResult, branches, auditResult, countsResult, profileResult, evidenceResult] = await Promise.all([
     appsQuery,
     getActiveBranchCodes(supabase),
     supabase.from("audit_logs").select("id,action,entity_type,created_at").order("created_at", { ascending: false }).limit(7),
     supabase.from("applications").select("application_type", { count: "exact", head: true }).eq("application_type", "individual"),
+    supabase.from("profiles").select("id,is_active"),
+    supabase.from("evidences").select("id", { count: "exact", head: true }),
   ]);
 
   const applications = (appsResult.data || []) as MonitorApplication[];
+  const totalAccounts = profileResult.data?.length || 0;
+  const activeAccounts = profileResult.data?.filter((p) => p.is_active).length || 0;
+  const evidenceCount = evidenceResult.count ?? 0;
 
   const totalMembers = countsResult.count ?? 0;
   const membersSubmitted = applications.filter((a) => a.application_type === "individual").length;
@@ -144,6 +145,12 @@ export default async function DashboardPage() {
   const maxStatusCount = Math.max(1, ...Object.values(counts));
   const audits = auditResult.data || [];
 
+  // Deadlines — periods ending within 7 days
+  const endingSoon = periods.filter((p) => {
+    const end = new Date(p.ends_at).getTime();
+    return p.status === "open" && end > now && end - now <= 7 * DAY;
+  });
+
   return (
     <>
       <PageHeader
@@ -161,12 +168,18 @@ export default async function DashboardPage() {
         {open && <span className="monitor-period-end">Kết thúc {formatDate(open.ends_at)}</span>}
       </div>
 
+      {/* 10 KPI cards */}
       <div className="monitor-kpi-grid">
         <KpiCard label="Tổng hồ sơ" value={applications.length} note={open ? "Trong đợt hiện tại" : "Toàn hệ thống"} icon={Files} />
         <KpiCard label="Cần xử lý" value={queue.length} note={`${counts.submitted} mới · ${counts.review} đang xét`} icon={Clock3} tone="warning" href="/review" />
         <KpiCard label="Quá hạn ≥ 3 ngày" value={stale.length} note={critical.length ? `${critical.length} hồ sơ trên 7 ngày` : "Không có mức nghiêm trọng"} icon={AlertTriangle} tone={critical.length ? "danger" : "success"} href="/review" />
         <KpiCard label="Chờ bổ sung" value={counts.revision} note="Đang chờ người nộp phản hồi" icon={CircleAlert} tone="danger" href="/applications?status=revision" />
         <KpiCard label="Tỷ lệ hoàn tất" value={`${completionRate}%`} note={`${completed}/${applications.length} hồ sơ đã kết luận`} icon={Gauge} tone="success" />
+        <KpiCard label="Tổng tài khoản" value={totalAccounts} note={`${activeAccounts} đang hoạt động`} icon={Users} href="/admin/users" />
+        <KpiCard label="Tài khoản hoạt động" value={activeAccounts} note={`${totalAccounts - activeAccounts} đã khóa`} icon={ShieldAlert} tone={activeAccounts > totalAccounts * 0.5 ? "success" : "warning"} href="/admin/users" />
+        <KpiCard label="Minh chứng" value={evidenceCount} note="Tổng số tệp tin" icon={ImageIcon} href="/admin/evidences" />
+        <KpiCard label="Đã nộp tuần này" value={submittedThisWeek} note="Hồ sơ mới trong 7 ngày" icon={Activity} />
+        <KpiCard label="Đợt sắp kết thúc" value={endingSoon.length} note={endingSoon.length ? "Cần gia hạn hoặc đóng" : "Không có"} icon={CalendarRange} tone={endingSoon.length ? "danger" : "success"} href="/periods" />
       </div>
 
       <div className="monitor-primary-grid">
@@ -219,9 +232,9 @@ export default async function DashboardPage() {
           <div className="monitor-coverage-bar"><span style={{ width: `${coverageRate}%` }} /></div>
           <p className="monitor-panel-caption">{coveredBranches.size}/{branches.length} Chi đoàn đã có hồ sơ trong phạm vi đang xem</p>
           <div className="monitor-coverage-stats">
-            <div><Users size={20} /><div><strong>{totalMembers.toLocaleString("vi-VN")}</strong><span>Đoàn viên có hồ sơ khen thưởng</span></div></div>
-            <div><CheckCircle2 size={20} /><div><strong>{membersSubmitted.toLocaleString("vi-VN")}</strong><span>Hồ sơ cá nhân đã nộp</span></div></div>
-            <div><Activity size={20} /><div><strong>{memberRate}%</strong><span>Tỷ lệ đoàn viên tham gia</span></div></div>
+            <div><Users size={20} /><div><strong>{totalMembers.toLocaleString("vi-VN")}</strong><span>Đoàn viên có hồ sơ</span></div></div>
+            <div><CheckCircle2 size={20} /><div><strong>{membersSubmitted.toLocaleString("vi-VN")}</strong><span>Hồ sơ đã nộp</span></div></div>
+            <div><Activity size={20} /><div><strong>{memberRate}%</strong><span>Tỷ lệ tham gia</span></div></div>
           </div>
           <div className="monitor-branch-grid">
             {branches.map((branch) => {

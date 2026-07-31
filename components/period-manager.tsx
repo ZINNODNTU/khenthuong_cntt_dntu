@@ -77,10 +77,10 @@ export function PeriodManager({ periods }: { periods: EvaluationPeriod[] }) {
   }
 
   async function remove(p: EvaluationPeriod) {
-    const confirmationName = window.prompt(`Xóa vĩnh viễn đợt xét?\n\nNhập đúng tên để xác nhận:\n${p.name}`);
-    if (confirmationName === null) return;
+    const ok = window.confirm(`Xóa vĩnh viễn đợt xét “${p.name}”?\n\nHành động này không thể hoàn tác.`);
+    if (!ok) return;
     setBusy(p.id); setMessage("");
-    const response = await fetch("/api/admin/periods", { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: p.id, confirmationName }) });
+    const response = await fetch("/api/admin/periods", { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: p.id, confirmationName: p.name }) });
     const data = await response.json();
     setMessage(response.ok ? "Đã xóa đợt xét." : data.error || "Không thể xóa đợt xét");
     setBusy("");
@@ -89,13 +89,13 @@ export function PeriodManager({ periods }: { periods: EvaluationPeriod[] }) {
 
   return (
     <>
+      {message && <div className={`notice ${message.startsWith("Đã") ? "notice-success" : "notice-error"} mb-4`}>{message}</div>}
+
       <form className="card card-body mb-4" onSubmit={create}>
         <div className="mb-4">
           <h3 className="font-semibold text-lg">Tạo đợt xét thành tích</h3>
           <p className="text-sm text-secondary">Quy định thời gian nhận hồ sơ và loại hồ sơ được phép nộp.</p>
         </div>
-
-        {message && <div className={`notice ${message.startsWith("Đã") ? "notice-success" : "notice-error"} mb-4`}>{message}</div>}
 
         <div className="form-grid">
           <div className="field">

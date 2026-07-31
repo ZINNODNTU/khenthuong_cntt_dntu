@@ -6,7 +6,7 @@ export function roleHome(role: UserRole): string {
         return "/dashboard";
     if (role === "reviewer")
         return "/review";
-    return "/applications/new";
+    return "/submitter";
 }
 export async function requireUser() {
     const supabase = await createClient();

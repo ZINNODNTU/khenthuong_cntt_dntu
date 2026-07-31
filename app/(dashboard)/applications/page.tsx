@@ -146,63 +146,100 @@ export default async function ApplicationsPage({
         </div>
       </form>
 
-      <div className="card card-body">
-        <div className="table-wrap table-responsive-card">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Mã hồ sơ</th>
-                <th>Đối tượng</th>
-                <th>Đợt xét</th>
-                <th>Đơn vị</th>
-                <th>Loại</th>
-                <th>Ảnh</th>
-                <th>Trạng thái</th>
-                <th>Cập nhật</th>
-                <th><span className="sr-only">Thao tác</span></th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.length ? (
-                rows.map((a) => (
-                  <tr key={a.id}>
-                    <td data-label="Mã hồ sơ"><b>{a.code}</b></td>
-                    <td data-label="Đối tượng">
-                      <Link href={`/applications/${a.id}`} style={{ color: "var(--color-primary)", fontWeight: "var(--font-weight-medium)" }}>
-                        {a.subject_name}
-                      </Link>
-                    </td>
-                    <td data-label="Đợt xét" className="text-secondary">{periodMap.get(a.evaluation_period_id) || "—"}</td>
-                    <td data-label="Đơn vị" className="text-secondary">{a.branch_code || (a.club_id ? "CLB" : "—")}</td>
-                    <td data-label="Loại" className="text-secondary">{typeLabel(a)}</td>
-                    <td data-label="Ảnh" className="text-secondary">{a.evidences?.[0]?.count || 0}</td>
-                    <td data-label="Trạng thái"><StatusBadge status={a.status} /></td>
-                    <td data-label="Cập nhật" className="text-secondary">{formatDate(a.updated_at)}</td>
-                    <td data-label="Thao tác">{(admin || a.status === "draft") && <DeleteApplicationButton id={a.id} code={a.code} subjectName={a.subject_name} status={a.status} compact />}</td>
-                  </tr>
-                ))
-              ) : (
+      {admin ? (
+        <div className="card card-body">
+          <div className="table-wrap table-responsive-card">
+            <table className="table">
+              <thead>
                 <tr>
-                  <td colSpan={9}>
-                    <EmptyState
-                      title={admin ? "Không có hồ sơ phù hợp" : "Bạn chưa có hồ sơ nào"}
-                      description={admin ? "Thử thay đổi điều kiện lọc" : "Tạo hồ sơ mới để bắt đầu."}
-                    />
-                  </td>
+                  <th>Mã hồ sơ</th>
+                  <th>Đối tượng</th>
+                  <th>Đợt xét</th>
+                  <th>Đơn vị</th>
+                  <th>Loại</th>
+                  <th>Ảnh</th>
+                  <th>Trạng thái</th>
+                  <th>Cập nhật</th>
+                  <th><span className="sr-only">Thao tác</span></th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rows.length ? (
+                  rows.map((a) => (
+                    <tr key={a.id}>
+                      <td data-label="Mã hồ sơ"><b>{a.code}</b></td>
+                      <td data-label="Đối tượng">
+                        <Link href={`/applications/${a.id}`} style={{ color: "var(--color-primary)", fontWeight: "var(--font-weight-medium)" }}>
+                          {a.subject_name}
+                        </Link>
+                      </td>
+                      <td data-label="Đợt xét" className="text-secondary">{periodMap.get(a.evaluation_period_id) || "—"}</td>
+                      <td data-label="Đơn vị" className="text-secondary">{a.branch_code || (a.club_id ? "CLB" : "—")}</td>
+                      <td data-label="Loại" className="text-secondary">{typeLabel(a)}</td>
+                      <td data-label="Ảnh" className="text-secondary">{a.evidences?.[0]?.count || 0}</td>
+                      <td data-label="Trạng thái"><StatusBadge status={a.status} /></td>
+                      <td data-label="Cập nhật" className="text-secondary">{formatDate(a.updated_at)}</td>
+                      <td data-label="Thao tác">{(admin || a.status === "draft") && <DeleteApplicationButton id={a.id} code={a.code} subjectName={a.subject_name} status={a.status} compact />}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={9}>
+                      <EmptyState title="Không có hồ sơ phù hợp" description="Thử thay đổi điều kiện lọc" />
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <Pagination page={page} totalItems={total || 0} pageSize={PAGE_SIZE} pathname="/applications" query={f} />
         </div>
-
-        <Pagination
-          page={page}
-          totalItems={total || 0}
-          pageSize={PAGE_SIZE}
-          pathname="/applications"
-          query={f}
-        />
-      </div>
+      ) : (
+        <>
+          {rows.length ? (
+            <div className="app-card-grid">
+              {rows.map((a) => {
+                const evidenceCount = a.evidences?.[0]?.count || 0;
+                const statusText = {
+                  draft: "Nháp", submitted: "Đã gửi", review: "Đang xét",
+                  revision: "Chờ bổ sung", passed: "Đạt", failed: "Không đạt",
+                }[a.status] || a.status;
+                const statusBadge = {
+                  draft: "badge-gray", submitted: "badge-blue", review: "badge-yellow",
+                  revision: "badge-red", passed: "badge-green", failed: "badge-red",
+                }[a.status] || "badge-gray";
+                return (
+                  <Link href={`/applications/${a.id}`} className="card app-card" key={a.id}>
+                    <div className="app-card-top">
+                      <span className="app-card-code">{a.code}</span>
+                      <span className={`badge ${statusBadge}`}>{statusText}</span>
+                    </div>
+                    <div className="app-card-name">{a.subject_name}</div>
+                    <div className="app-card-meta">
+                      <span>{typeLabel(a)} · {evidenceCount} ảnh</span>
+                      <span>{formatDate(a.updated_at)}</span>
+                    </div>
+                    <div className="app-card-progress">
+                      <div className={`app-card-progress-bar is-${a.status}`} style={{
+                        width: a.status === "draft" ? "10%" : a.status === "submitted" ? "30%" : a.status === "review" ? "50%" : a.status === "revision" ? "50%" : "100%"
+                      }} />
+                    </div>
+                    <div className="app-card-actions">
+                      {a.status === "draft" && <DeleteApplicationButton id={a.id} code={a.code} subjectName={a.subject_name} status={a.status} compact />}
+                      <span className="app-card-view">Xem chi tiết →</span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="card card-body">
+              <EmptyState title="Bạn chưa có hồ sơ nào" description="Tạo hồ sơ mới để bắt đầu." />
+            </div>
+          )}
+          <Pagination page={page} totalItems={total || 0} pageSize={PAGE_SIZE} pathname="/applications" query={f} />
+        </>
+      )}
     </>
   );
 }

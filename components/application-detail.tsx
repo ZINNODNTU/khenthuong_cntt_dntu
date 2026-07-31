@@ -5,6 +5,7 @@ import type { Application } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { DeleteApplicationButton } from "@/components/delete-application-button";
+import { ApplicationTimeline } from "@/components/application-timeline";
 
 function typeLabel(a: Application) {
   if (a.application_type === "individual") return "Cá nhân";
@@ -68,6 +69,8 @@ export function ApplicationDetail({ app, canReview, canSupplement = false, canDe
       </div>
 
       {app.review_comment && (<div className={"notice mb-4 " + (app.status === "passed" ? "notice-success" : "notice-error")}><b>Nhận xét hội đồng:</b> {app.review_comment}</div>)}
+
+      <ApplicationTimeline status={app.status} createdAt={formatDate(app.created_at)} submittedAt={app.submitted_at ? formatDate(app.submitted_at) : undefined} />
 
       <section className="card detail-overview-card">
         <div className="detail-grid">

@@ -1207,6 +1207,12 @@ to authenticated
 using (public.current_role() = 'admin')
 with check (public.current_role() = 'admin');
 
+create policy periods_admin_delete
+  on public.evaluation_periods
+  for delete
+  to authenticated
+  using (public.current_role() = 'admin');
+
 -- Applications
 create policy applications_select_visible
 on public.applications

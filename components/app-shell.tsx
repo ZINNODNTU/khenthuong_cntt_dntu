@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
-  BarChart3, Building2, CalendarRange, ClipboardCheck, FilePlus2, Files,
-  ListChecks, Settings, ShieldCheck, Users,
+  Award, BarChart3, Building, Building2, CalendarRange, ClipboardCheck,
+  FileImage, FilePlus2, Files, History,
+  ListChecks, MessageSquare, Settings, ShieldCheck, User, Users,
 } from "lucide-react";
 import type { Profile } from "@/lib/types";
 import type { NavGroup } from "@/components/layout/types";
@@ -13,18 +14,33 @@ import { Topbar } from "@/components/layout/topbar";
 import { HelpPanel } from "@/components/layout/help-panel";
 
 const adminGroups: NavGroup[] = [
+  // Nhóm 1 — Điều hành
   { label: "Điều hành", items: [
     { href: "/dashboard", label: "Tổng quan", description: "Số liệu và tiến độ hệ thống", icon: BarChart3 },
-    { href: "/applications", label: "Toàn bộ hồ sơ", description: "Tra cứu hồ sơ đã tiếp nhận", icon: Files },
-    { href: "/review", label: "Xét duyệt hồ sơ", description: "Hàng đợi cần xử lý", icon: ClipboardCheck },
-    { href: "/results", label: "Kết quả xét duyệt", description: "Tổng hợp quyết định", icon: ListChecks },
+    { href: "/admin/pending", label: "Việc cần xử lý", description: "Hồ sơ chờ, yêu cầu bổ sung", icon: ClipboardCheck },
   ]},
-  { label: "Quản trị dữ liệu", items: [
+  // Nhóm 2 — Nghiệp vụ xét khen thưởng
+  { label: "Nghiệp vụ xét thưởng", items: [
     { href: "/periods", label: "Đợt xét thành tích", description: "Thời gian và phạm vi tiếp nhận", icon: CalendarRange },
+    { href: "/applications", label: "Hồ sơ thành tích", description: "Tất cả hồ sơ đã tiếp nhận", icon: Files },
+    { href: "/applications?type=collective", label: "Hồ sơ tập thể", description: "Tập thể Chi đoàn và CLB", icon: Users },
+    { href: "/applications?type=individual", label: "Hồ sơ cá nhân", description: "Cá nhân sinh viên", icon: User },
+    { href: "/review", label: "Thẩm định", description: "Xét duyệt hồ sơ", icon: ClipboardCheck },
+    { href: "/review/objections", label: "Phản biện – Giải trình", description: "Xử lý khiếu nại", icon: MessageSquare },
+    { href: "/results", label: "Kết quả xét duyệt", description: "Tổng hợp quyết định", icon: Award },
+  ]},
+  // Nhóm 3 — Quản lý dữ liệu
+  { label: "Quản lý dữ liệu", items: [
+    { href: "/admin/users", label: "Quản lý tài khoản", description: "Phân quyền và trạng thái", icon: ShieldCheck },
     { href: "/branches", label: "Quản lý Chi đoàn", description: "Đơn vị và tài khoản đại diện", icon: Users },
-    { href: "/clubs", label: "Quản lý Câu lạc bộ", description: "CLB và tài khoản đại diện", icon: Building2 },
-    { href: "/admin/users", label: "Tài khoản hệ thống", description: "Phân quyền và trạng thái", icon: ShieldCheck },
-    { href: "/settings", label: "Cấu hình vận hành", description: "Kho ảnh và kết nối hệ thống", icon: Settings },
+    { href: "/clubs", label: "Quản lý CLB", description: "CLB và tài khoản đại diện", icon: Building2 },
+    { href: "/admin/units", label: "Quản lý đơn vị", description: "Phân loại và trạng thái đơn vị", icon: Building },
+    { href: "/admin/evidences", label: "Quản lý minh chứng", description: "Duyệt và xóa tệp", icon: FileImage },
+  ]},
+  // Nhóm 4 — Quản trị hệ thống
+  { label: "Quản trị hệ thống", items: [
+    { href: "/admin/audit-log", label: "Nhật ký hoạt động", description: "Lịch sử thao tác hệ thống", icon: History },
+    { href: "/settings", label: "Cấu hình hệ thống", description: "Kết nối và kho ảnh", icon: Settings },
   ]},
 ];
 
@@ -36,6 +52,9 @@ const reviewerGroups: NavGroup[] = [
 ];
 
 const submitterGroups: NavGroup[] = [
+  { label: "Trang chủ", items: [
+    { href: "/submitter", label: "Tổng quan", description: "Dashboard cá nhân", icon: BarChart3 },
+  ]},
   { label: "Hồ sơ thành tích", items: [
     { href: "/applications/new", label: "Nộp thành tích", description: "Tạo hồ sơ theo từng bước", icon: FilePlus2 },
     { href: "/applications", label: "Hồ sơ của tôi", description: "Theo dõi trạng thái xử lý", icon: Files },
