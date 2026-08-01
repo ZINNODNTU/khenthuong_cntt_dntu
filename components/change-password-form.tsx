@@ -13,6 +13,7 @@ export function ChangePasswordForm() {
     setBusy(true);
     setMessage("");
     const form = new FormData(event.currentTarget);
+    const currentPassword = String(form.get("currentPassword") || "");
     const password = String(form.get("password") || "");
     const confirmPassword = String(form.get("confirmPassword") || "");
     if (password !== confirmPassword) {
@@ -23,11 +24,11 @@ export function ChangePasswordForm() {
     const response = await fetch("/api/account/change-password", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ currentPassword, password, confirmPassword }),
     });
-    const result = await response.json();
+    const result = await response.json().catch(() => ({}));
     if (!response.ok) {
-      setMessage(result.error || "Không thể đổi mật khẩu");
+      setMessage(result.error?.message || "Không thể đổi mật khẩu");
       setBusy(false);
       return;
     }
@@ -40,22 +41,27 @@ export function ChangePasswordForm() {
       {message && <div className="notice notice-error">{message}</div>}
 
       <div className="notice notice-info">
-        Đây là lần đăng nhập đầu tiên hoặc mật khẩu vừa được quản trị viên đặt lại. Hãy tạo mật khẩu riêng trước khi sử dụng hệ thống.
+        Xác minh mật khẩu hiện tại trước khi thiết lập mật khẩu mới.
+      </div>
+
+      <div className="field">
+        <label className="field-label" htmlFor="pw-current">Mật khẩu hiện tại *</label>
+        <input className="input" id="pw-current" name="currentPassword" type="password" required maxLength={128} autoComplete="current-password" />
       </div>
 
       <div className="field">
         <label className="field-label" htmlFor="pw-new">Mật khẩu mới *</label>
-        <input className="input" id="pw-new" name="password" type="password" minLength={10} required autoComplete="new-password" />
-        <span className="field-helper">Tối thiểu 10 ký tự, có chữ và số; không dùng lại mật khẩu mặc định 123456.</span>
+        <input className="input" id="pw-new" name="password" type="password" minLength={12} maxLength={128} required autoComplete="new-password" />
+        <span className="field-helper">Tối thiểu 12 ký tự. Cho phép passphrase.</span>
       </div>
 
       <div className="field">
         <label className="field-label" htmlFor="pw-confirm">Xác nhận mật khẩu mới *</label>
-        <input className="input" id="pw-confirm" name="confirmPassword" type="password" minLength={10} required autoComplete="new-password" />
+        <input className="input" id="pw-confirm" name="confirmPassword" type="password" minLength={12} maxLength={128} required autoComplete="new-password" />
       </div>
 
       <Button variant="primary" loading={busy} className="w-full">
-        {busy ? "Đang cập nhật..." : "Đổi mật khẩu"}
+        {busy ? "Đang xác minh..." : "Đổi mật khẩu"}
       </Button>
     </form>
   );

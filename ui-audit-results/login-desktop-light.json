@@ -5,6 +5,8 @@
     "offenders": []
   },
   "violations": [],
-  "consoleErrors": [],
+  "consoleErrors": [
+    "eval() is not supported in this environment. If this page was served with a `Content-Security-Policy` header, make sure that `unsafe-eval` is included. React requires eval() in development mode for various debugging features like reconstructing callstacks from a different environment.\nReact will never use eval() in production mode"
+  ],
   "networkErrors": []
 }

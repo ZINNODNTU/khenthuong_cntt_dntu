@@ -56,6 +56,9 @@ function normalizedAuthError(message: string) {
 }
 
 export async function POST(request: Request) {
+  if (!env.publicSignupEnabled()) {
+    return json({ error: "Đăng ký tài khoản hiện đang tạm đóng." }, 403);
+  }
   let body: unknown;
 
   try {

@@ -114,11 +114,11 @@ export const applicationSchema = z
         });
     }
     if (value.status === "submitted" &&
-        value.achievements.trim().length < 20) {
+        !value.achievements.trim()) {
         ctx.addIssue({
             code: "custom",
             path: ["achievements"],
-            message: "Báo cáo thành tích phải có ít nhất 20 ký tự.",
+            message: "Hãy nhập thành tích nổi bật.",
         });
     }
 });

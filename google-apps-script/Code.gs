@@ -9,7 +9,7 @@
  * - MAX_IMAGE_SIZE_BYTES: optional, default 4194304 (4 MB)
  */
 
-var STORAGE_VERSION_ = '1.0.0';
+var STORAGE_VERSION_ = '1.1.0';
 var ALLOWED_MIME_TYPES_ = ['image/jpeg', 'image/png', 'image/webp'];
 
 function doPost(e) {
@@ -77,9 +77,15 @@ function uploadImage_(payload) {
   var originalName = sanitizeFileName_(payload.fileName || 'image');
   var mimeType = String(payload.mimeType || '');
   var base64 = String(payload.base64 || '');
+  var uploadKey = String(payload.uploadKey || '').trim();
 
   validateMime_(mimeType);
   if (!base64) throw new Error('Thiếu dữ liệu ảnh.');
+  if (!uploadKey || uploadKey.length > 500) throw new Error('Khóa upload không hợp lệ.');
+  var cachedFileId = CacheService.getScriptCache().get('upload:' + digestKey_(uploadKey));
+  if (cachedFileId) {
+    try { return storedFile_(DriveApp.getFileById(cachedFileId)); } catch (ignored) {}
+  }
 
   var bytes = Utilities.base64Decode(base64);
   validateSize_(bytes.length);
@@ -87,15 +93,19 @@ function uploadImage_(payload) {
   if (!detected || detected !== mimeType) throw new Error('Nội dung ảnh không khớp MIME type.');
 
   var folder = ensureFolderPath_(['applications', applicationCode, category]);
-  var finalName = new Date().getTime() + '-' + originalName;
+  var finalName = new Date().getTime() + '-' + Utilities.getUuid().slice(0, 8) + '-' + originalName;
   var blob = Utilities.newBlob(bytes, mimeType, finalName);
   var file = folder.createFile(blob);
-  file.setDescription(JSON.stringify({ applicationCode: applicationCode, category: category, uploadedAt: new Date().toISOString() }));
+  file.setDescription(JSON.stringify({ applicationCode: applicationCode, category: category, uploadKey: uploadKey, uploadedAt: new Date().toISOString() }));
+  CacheService.getScriptCache().put('upload:' + digestKey_(uploadKey), file.getId(), 21600);
+  return storedFile_(file);
+}
 
+function storedFile_(file) {
   return {
     id: file.getId(),
     name: file.getName(),
-    mimeType: mimeType,
+    mimeType: file.getMimeType(),
     size: file.getSize(),
     createdTime: file.getDateCreated().toISOString()
   };
@@ -220,9 +230,20 @@ function getRootFolder_() {
   return DriveApp.getFolderById(id);
 }
 
+function digestKey_(value) {
+  var bytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, value, Utilities.Charset.UTF_8);
+  return Utilities.base64EncodeWebSafe(bytes).replace(/=+$/, '');
+}
+
 function ensureFolderPath_(segments) {
+  var cache = CacheService.getScriptCache();
+  var cacheKey = 'folder:' + digestKey_(segments.join('/'));
+  var cachedId = cache.get(cacheKey);
+  if (cachedId) {
+    try { return DriveApp.getFolderById(cachedId); } catch (ignored) {}
+  }
   var lock = LockService.getScriptLock();
-  lock.waitLock(15000);
+  if (!lock.tryLock(5000)) throw new Error('Kho ảnh đang bận. Vui lòng thử lại.');
   try {
     var folder = getRootFolder_();
     segments.forEach(function (segment) {
@@ -230,6 +251,7 @@ function ensureFolderPath_(segments) {
       var iterator = folder.getFoldersByName(safe);
       folder = iterator.hasNext() ? iterator.next() : folder.createFolder(safe);
     });
+    cache.put(cacheKey, folder.getId(), 21600);
     return folder;
   } finally {
     lock.releaseLock();

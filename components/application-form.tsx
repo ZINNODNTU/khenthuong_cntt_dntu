@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea, Input, Select, Field } from "@/components/ui/input";
 import { Stepper } from "@/components/ui/stepper";
 
-type ImageItem = { file: File; url: string };
+type ImageItem = { file: File; url: string; originalBytes: number };
 type Mode = "individual" | "branch_collective" | "club_collective";
+type UploadGroup = { parentType: string; parentId: string; category: string; items: ImageItem[] };
 type Activity = {
   key: string; level: "faculty" | "university"; name: string; organizer: string;
   activityDate: string; role: string; result: string; contribution: string; images: ImageItem[];
@@ -21,6 +22,33 @@ type Award = {
 
 const makeKey = () => crypto.randomUUID();
 const LEVELS = ["faculty", "university"] as const;
+const TARGET_IMAGE_BYTES = 1_500_000;
+const MAX_IMAGE_EDGE = 1920;
+
+async function optimizeImage(file: File): Promise<File> {
+  if (file.size <= TARGET_IMAGE_BYTES) return file;
+  const bitmap = await createImageBitmap(file);
+  try {
+    const scale = Math.min(1, MAX_IMAGE_EDGE / Math.max(bitmap.width, bitmap.height));
+    let width = Math.max(1, Math.round(bitmap.width * scale));
+    let height = Math.max(1, Math.round(bitmap.height * scale));
+    const type = file.type === "image/png" ? "image/webp" : file.type;
+    let quality = 0.86;
+    async function encode() {
+      const canvas = document.createElement("canvas"); canvas.width = width; canvas.height = height;
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("Trình duyệt không hỗ trợ xử lý ảnh.");
+      context.drawImage(bitmap, 0, 0, width, height);
+      return new Promise<Blob>((resolve, reject) => canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Không thể nén ảnh.")), type, quality));
+    }
+    let blob = await encode();
+    while (blob.size > TARGET_IMAGE_BYTES && quality > 0.62) { quality = Math.max(0.62, quality - 0.08); blob = await encode(); }
+    while (blob.size > TARGET_IMAGE_BYTES && width > 960) { width = Math.round(width * 0.85); height = Math.round(height * 0.85); blob = await encode(); }
+    if (blob.size >= file.size) return file;
+    const extension = type === "image/webp" ? "webp" : "jpg";
+    return new File([blob], `${file.name.replace(/\.[^.]+$/, "") || "image"}.${extension}`, { type, lastModified: file.lastModified });
+  } finally { bitmap.close(); }
+}
 
 export function ApplicationForm({
   branchCode, club, submissionScope, periods, fullName, accountEmail, studentId,
@@ -38,6 +66,7 @@ export function ApplicationForm({
   const [portraitImages, setPortraitImages] = useState<ImageItem[]>([]);
   const [mainImages, setMainImages] = useState<ImageItem[]>([]);
   const [busy, setBusy] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({ done: 0, total: 0 });
   const [error, setError] = useState("");
   const [step, setStep] = useState(0);
   const sections = ["Loại hồ sơ", "Thông tin", "Báo cáo", "Hoạt động", "Khen thưởng", "Kiểm tra"];
@@ -66,14 +95,16 @@ export function ApplicationForm({
     return Boolean(club && p.allow_club_collective);
   }
 
-  function files(list: FileList | null, limit?: number) {
+  async function files(list: FileList | null, limit?: number) {
     const incoming = [...(list || [])];
     const rejected = incoming.filter((file) => !(IMAGE_MIME_TYPES as readonly string[]).includes(file.type));
     if (rejected.length) setError(`Không hỗ trợ ${rejected.length} file. Chỉ nhận ảnh JPEG, PNG hoặc WebP.`);
-    const selected = incoming
-      .filter((file) => (IMAGE_MIME_TYPES as readonly string[]).includes(file.type))
-      .map((file) => ({ file, url: URL.createObjectURL(file) }));
-    return typeof limit === "number" ? selected.slice(0, limit) : selected;
+    const accepted = incoming.filter((file) => (IMAGE_MIME_TYPES as readonly string[]).includes(file.type));
+    const optimized = await Promise.all(accepted.map(async (original) => {
+      const file = await optimizeImage(original);
+      return { file, url: URL.createObjectURL(file), originalBytes: original.size };
+    }));
+    return typeof limit === "number" ? optimized.slice(0, limit) : optimized;
   }
 
   const evidenceStats = useMemo(() => {
@@ -86,7 +117,7 @@ export function ApplicationForm({
     const completeActivities = activities.filter((activity) => activity.name.trim() && activity.images.length).length;
     const completeAwards = awards.filter((award) => award.title.trim() && award.decisionNumber.trim() && award.issuer.trim() && award.images.length).length;
     const totalImages = portraitImages.length + mainImages.length + activityImages + awardImages;
-    const requiredChecks = [!isIndividual || portraitImages.length === 1, mainImages.length > 0, activities.length === completeActivities, awards.length === completeAwards];
+    const requiredChecks = [!isIndividual || portraitImages.length === 1, mainImages.length > 0, activities.length > 0 && activities.length === completeActivities, awards.length > 0 && awards.length === completeAwards];
     return {
       faculty: faculty.length, university: university.length,
       certificates: certificates.length, commendations: commendations.length,
@@ -100,19 +131,40 @@ export function ApplicationForm({
     [evidenceStats]
   );
 
-  async function upload(applicationId: string, applicationCode: string, parentType: string, parentId: string, category: string, items: ImageItem[]) {
-    for (const item of items) {
-      const fd = new FormData();
-      fd.set("file", item.file);
-      fd.set("applicationId", applicationId);
-      fd.set("applicationCode", applicationCode);
-      fd.set("parentType", parentType);
-      fd.set("parentId", parentId);
-      fd.set("category", category);
-      const r = await fetch("/api/evidence/upload", { method: "POST", body: fd });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || "Tải ảnh thất bại");
+  async function upload(applicationId: string, applicationCode: string, groups: UploadGroup[]) {
+    let cursor = 0;
+    async function worker() {
+      while (cursor < groups.length) {
+        const group = groups[cursor++];
+        for (const item of group.items) {
+          const uploadKey = `${applicationId}:${group.parentType}:${group.parentId}:${group.category}:${item.file.name}:${item.file.size}:${item.file.lastModified}`;
+          let lastError = "Tải ảnh thất bại";
+          let completed = false;
+          for (let attempt = 0; attempt < 3 && !completed; attempt++) {
+            const fd = new FormData();
+            fd.set("file", item.file); fd.set("applicationId", applicationId); fd.set("applicationCode", applicationCode);
+            fd.set("parentType", group.parentType); fd.set("parentId", group.parentId); fd.set("category", group.category); fd.set("uploadKey", uploadKey);
+            try {
+              const response = await fetch("/api/evidence/upload", { method: "POST", body: fd });
+              const data = await response.json();
+              if (response.ok) {
+                completed = true;
+                setUploadProgress((value) => ({ ...value, done: value.done + 1 }));
+                continue;
+              }
+              lastError = data.error || lastError;
+              if (![502, 503, 504].includes(response.status)) throw new Error(lastError);
+            } catch (error) {
+              lastError = error instanceof Error ? error.message : lastError;
+              if (!(error instanceof TypeError)) throw error;
+            }
+            if (attempt === 2) throw new Error(lastError);
+            await new Promise((resolve) => setTimeout(resolve, 600 * 2 ** attempt + Math.random() * 400));
+          }
+        }
+      }
     }
+    await Promise.all(Array.from({ length: Math.min(2, groups.length) }, () => worker()));
   }
 
   async function submit(e: React.FormEvent<HTMLFormElement>, requestedStatus: "draft" | "submitted") {
@@ -122,16 +174,24 @@ export function ApplicationForm({
     try {
       if (!periodId) throw new Error("Hãy chọn đợt xét thành tích.");
       if (!allowed(mode)) throw new Error("Loại hồ sơ không được tiếp nhận trong đợt này.");
-      if (requestedStatus === "submitted" && isIndividual && portraitImages.length !== 1)
-        throw new Error("Hồ sơ cá nhân cần 01 ảnh chân dung rõ khuôn mặt.");
 
       const f = new FormData(e.currentTarget);
+      const subjectName = String(f.get("subjectName") || "").trim();
       const achievements = String(f.get("achievements") || "");
       const birthDate = String(f.get("birthDate") || "");
-      if (requestedStatus === "submitted" && isIndividual && !birthDate)
-        throw new Error("Hồ sơ cá nhân cần nhập ngày sinh.");
-      if (birthDate && birthDate > latestAdultBirthDate)
-        throw new Error("Người nộp hồ sơ phải đủ 18 tuổi.");
+
+      // Chỉ kiểm tra thông tin bắt buộc (*) khi ấn Nộp, không khi Lưu nháp
+      if (requestedStatus === "submitted") {
+        if (!subjectName) throw new Error("Hãy nhập họ và tên (hoặc tên tập thể).");
+        if (!achievements.trim()) throw new Error("Hãy nhập thành tích nổi bật.");
+        if (isIndividual && !birthDate) throw new Error("Hồ sơ cá nhân cần nhập ngày sinh.");
+        if (isIndividual && portraitImages.length !== 1) throw new Error("Hồ sơ cá nhân cần 01 ảnh chân dung rõ khuôn mặt.");
+        const emptyActivity = activities.find((a) => !a.name.trim() || !a.organizer.trim() || !a.role.trim());
+        if (emptyActivity) throw new Error(`Hoạt động ${emptyActivity.name ? `“${emptyActivity.name}”` : "chưa đặt tên"} cần đủ tên, tổ chức và vai trò.`);
+        const emptyAward = awards.find((a) => !a.title.trim() || !a.decisionNumber.trim() || !a.issuer.trim());
+        if (emptyAward) throw new Error(`Khen thưởng ${emptyAward.title ? `“${emptyAward.title}”` : "chưa đặt tên"} cần đủ tên, số quyết định và đơn vị cấp.`);
+      }
+      if (birthDate && birthDate > latestAdultBirthDate) throw new Error("Người nộp hồ sơ phải đủ 18 tuổi.");
       const invalidActivity = activities.find((activity) => !activity.activityDate || activity.activityDate < evidenceStart || activity.activityDate > evidenceEnd);
       const invalidAward = awards.find((award) => !award.issuedDate || award.issuedDate < evidenceStart || award.issuedDate > evidenceEnd);
       if (requestedStatus === "submitted" && invalidActivity)
@@ -145,7 +205,7 @@ export function ApplicationForm({
         collectiveType: mode === "branch_collective" ? "branch" : mode === "club_collective" ? "club" : null,
         branchCode: branchCode || "",
         clubId: mode === "club_collective" ? club?.id || null : null,
-        subjectName: String(f.get("subjectName")),
+        subjectName,
         birthDate,
         position: String(f.get("position") || ""),
         phone: String(f.get("phone") || ""),
@@ -169,10 +229,14 @@ export function ApplicationForm({
         throw new Error(result.error || "Không thể lưu hồ sơ");
       }
 
-      await upload(result.application.id, result.application.code, "application", result.application.id, "portrait", portraitImages);
-      await upload(result.application.id, result.application.code, "application", result.application.id, "main", mainImages);
-      for (const a of activities) await upload(result.application.id, result.application.code, "activity", result.activityMap[a.key], a.level, a.images);
-      for (const a of awards) await upload(result.application.id, result.application.code, "award", result.awardMap[a.key], "award", a.images);
+      const uploadGroups: UploadGroup[] = [
+        { parentType: "application", parentId: result.application.id, category: "portrait", items: portraitImages },
+        { parentType: "application", parentId: result.application.id, category: "main", items: mainImages },
+        ...activities.map((a) => ({ parentType: "activity", parentId: result.activityMap[a.key], category: a.level, items: a.images })),
+        ...awards.map((a) => ({ parentType: "award", parentId: result.awardMap[a.key], category: "award", items: a.images })),
+      ].filter((group) => group.items.length);
+      setUploadProgress({ done: 0, total: uploadGroups.reduce((total, group) => total + group.items.length, 0) });
+      await upload(result.application.id, result.application.code, uploadGroups);
 
       if (requestedStatus === "submitted") {
         const final = await fetch(`/api/applications/${result.application.id}`, {
@@ -261,7 +325,7 @@ export function ApplicationForm({
             <div className="form-grid">
               <div className="field">
                 <label className="field-label">{isIndividual ? "Họ và tên" : "Tên tập thể"} *</label>
-                <input className="input" name="subjectName" required minLength={2} defaultValue={subjectDefault} key={`${mode}-${periodId}`} />
+                <input className="input" name="subjectName" minLength={2} defaultValue={subjectDefault} key={`${mode}-${periodId}`} />
               </div>
               <div className="field">
                 <label className="field-label">Đơn vị</label>
@@ -294,7 +358,7 @@ export function ApplicationForm({
                   <div className="field span-2">
                     <label className="field-label">Ảnh chân dung *</label>
                     <div className="upload-zone">
-                      <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => { const s = files(e.target.files, 1); setPortraitImages(s); }} />
+                      <input type="file" accept="image/jpeg,image/png,image/webp" onChange={async (e) => { const s = await files(e.target.files, 1); setPortraitImages(s); }} />
                       <div className="upload-note">Chọn 01 ảnh chính diện, rõ khuôn mặt.</div>
                     </div>
                     {portraitImages.length > 0 && (
@@ -320,7 +384,7 @@ export function ApplicationForm({
             <div className="form-grid">
               <div className="field span-2">
                 <label className="field-label">Thành tích nổi bật *</label>
-                <textarea className="textarea" name="achievements" required minLength={20} placeholder="Gợi ý: Nêu tên thành tích, thời gian, cấp tổ chức, kết quả định lượng và tác động nổi bật." />
+                <textarea className="textarea" name="achievements" placeholder="Gợi ý: Nêu tên thành tích, thời gian, cấp tổ chức, kết quả định lượng và tác động nổi bật." />
               </div>
               <div className="field">
                 <label className="field-label">Vai trò tham mưu, tổ chức</label>
@@ -341,7 +405,7 @@ export function ApplicationForm({
               <div className="field span-2">
                 <label className="field-label">Ảnh minh chứng tổng hợp</label>
                 <div className="upload-zone">
-                  <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(e) => { const s = files(e.target.files); setMainImages((v) => [...v, ...s]); }} />
+                  <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={async (e) => { const s = await files(e.target.files); setMainImages((v) => [...v, ...s]); }} />
                   <div className="upload-note"><strong>{mainImages.length} ảnh đã chọn.</strong> Ưu tiên ảnh quyết định, xác nhận kết quả hoặc toàn cảnh hoạt động.</div>
                 </div>
                 {mainImages.length > 0 && (
@@ -406,8 +470,8 @@ export function ApplicationForm({
                       </Field>
                       <div className="field span-2">
                         <div className="upload-zone">
-                          <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(e) => {
-                            const selected = files(e.target.files);
+                          <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={async (e) => {
+                            const selected = await files(e.target.files);
                             setActivities((items) => items.map((item) => item.key === a.key ? { ...item, images: [...item.images, ...selected] } : item));
                           }} />
                           <div className="upload-note"><strong>{a.images.length} ảnh đã chọn.</strong> Nộp thư mời/xác nhận tham gia và ảnh thể hiện vai trò hoặc kết quả.</div>
@@ -477,8 +541,8 @@ export function ApplicationForm({
                   <div className="field span-2">
                     <label className="field-label">Ảnh giấy chứng nhận / bằng khen</label>
                     <div className="upload-zone">
-                      <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(e) => {
-                        const s = files(e.target.files);
+                      <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={async (e) => {
+                        const s = await files(e.target.files);
                         setAwards((v) => v.map((x) => x.key === a.key ? { ...x, images: [...x.images, ...s] } : x));
                       }} />
                       <div className="upload-note"><strong>{a.images.length} ảnh đã chọn.</strong> Chụp trọn văn bản, rõ số quyết định, tên người nhận và đơn vị cấp.</div>
@@ -525,6 +589,7 @@ export function ApplicationForm({
           <div className="sidebar-card">
             <h4 className="sidebar-card-title">Gửi hồ sơ</h4>
             <p className="text-sm text-secondary mb-4">Sau khi gửi, không thể tạo hồ sơ thứ hai cho cùng đối tượng trong đợt này.</p>
+            {busy && uploadProgress.total > 0 && <p className="text-sm mb-3" role="status">Đang tải ảnh {uploadProgress.done}/{uploadProgress.total}</p>}
             <div className="flex flex-col gap-3">
               <Button variant="primary" loading={busy} onClick={() => { actionRef.current = "submitted"; }}>
                 {busy ? "Đang xử lý..." : "Hoàn tất và gửi"}
@@ -541,8 +606,8 @@ export function ApplicationForm({
             <div className="evidence-checklist">
               <div className={portraitImages.length === 1 || !isIndividual ? "is-done" : ""}>{portraitImages.length === 1 || !isIndividual ? "✓" : "○"} Ảnh chân dung</div>
               <div className={mainImages.length ? "is-done" : ""}>{mainImages.length ? "✓" : "○"} Minh chứng tổng hợp ({mainImages.length})</div>
-              <div className={activities.length === evidenceStats.completeActivities ? "is-done" : ""}>{activities.length === evidenceStats.completeActivities ? "✓" : "○"} Hoạt động đủ ảnh ({evidenceStats.completeActivities}/{activities.length})</div>
-              <div className={awards.length === evidenceStats.completeAwards ? "is-done" : ""}>{awards.length === evidenceStats.completeAwards ? "✓" : "○"} Khen thưởng đủ ảnh ({evidenceStats.completeAwards}/{awards.length})</div>
+              <div className={activities.length > 0 && activities.length === evidenceStats.completeActivities ? "is-done" : ""}>{activities.length > 0 && activities.length === evidenceStats.completeActivities ? "✓" : "○"} Hoạt động đủ ảnh ({evidenceStats.completeActivities}/{activities.length})</div>
+              <div className={awards.length > 0 && awards.length === evidenceStats.completeAwards ? "is-done" : ""}>{awards.length > 0 && awards.length === evidenceStats.completeAwards ? "✓" : "○"} Khen thưởng đủ ảnh ({evidenceStats.completeAwards}/{awards.length})</div>
               <div className="is-total"><FileImage size={15} /> Tổng cộng {evidenceStats.totalImages} ảnh</div>
             </div>
           </div>

@@ -60,7 +60,7 @@ export function BranchManager({
     const d = await r.json();
     if (r.ok) {
       const first = d.accounts?.[0];
-      setMessage(allMissing ? `Đã cấp hoặc đặt lại ${d.accounts.length} tài khoản Chi đoàn.` : "Đã cấp lại tài khoản và mật khẩu mặc định.");
+      setMessage(allMissing ? `Đã cấp hoặc đặt lại ${d.accounts.length} tài khoản Chi đoàn.` : "Đã cấp lại tài khoản và liên kết mời thiết lập mật khẩu.");
       if (!allMissing && first) setCredentials({ title: `Tài khoản Chi đoàn ${code}`, email: first.email, password: first.password });
       router.refresh();
     } else {
@@ -90,7 +90,7 @@ export function BranchManager({
         <form className="card card-body mb-4" onSubmit={addBranch}>
           <div className="mb-4">
             <h3 className="font-semibold text-lg">Thêm Chi đoàn và cấp tài khoản</h3>
-            <p className="text-sm text-secondary">Hệ thống tự tạo email theo mã Chi đoàn, mật khẩu mặc định 123456 và yêu cầu đổi mật khẩu ở lần đăng nhập đầu tiên.</p>
+            <p className="text-sm text-secondary">Hệ thống tự tạo email theo mã Chi đoàn, liên kết mời thiết lập mật khẩu mật khẩu riêng và yêu cầu đổi mật khẩu ở lần đăng nhập đầu tiên.</p>
           </div>
 
           {message && <div className={`notice ${message.startsWith("Đã") ? "notice-success" : "notice-error"} mb-4`}>{message}</div>}
@@ -173,7 +173,7 @@ export function BranchManager({
                       <td data-label="Thao tác">
                         <div className="flex gap-2">
                           <Button size="sm" variant="outline" loading={busyCode === branch.code} onClick={() => provision(branch.code)}>
-                            {account ? "Đặt lại 123456" : "Cấp tài khoản"}
+                            {account ? "Đặt lại mật khẩu riêng" : "Cấp tài khoản"}
                           </Button>
                           <Button size="sm" variant={branch.is_active ? "danger" : "primary"} loading={busyCode === branch.code} onClick={() => toggle(branch)}>
                             {branch.is_active ? "Ngừng sử dụng" : "Kích hoạt"}
@@ -200,3 +200,5 @@ export function BranchManager({
     </>
   );
 }
+
+

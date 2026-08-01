@@ -57,7 +57,7 @@ export function ClubManager({
     const d = await r.json();
     if (r.ok) {
       const first = d.accounts?.[0];
-      setMessage(allMissing ? `Đã cấp hoặc đặt lại ${d.accounts.length} tài khoản CLB.` : "Đã cấp lại tài khoản và mật khẩu mặc định.");
+      setMessage(allMissing ? `Đã cấp hoặc đặt lại ${d.accounts.length} tài khoản CLB.` : "Đã cấp lại tài khoản và liên kết mời thiết lập mật khẩu.");
       if (!allMissing && first) {
         const club = clubs.find((c) => c.id === id);
         setCredentials({ title: `Tài khoản ${club?.name || "CLB"}`, email: first.email, password: first.password });
@@ -89,7 +89,7 @@ export function ClubManager({
       <form className="card card-body mb-4" onSubmit={create}>
         <div className="mb-4">
           <h3 className="font-semibold text-lg">Thêm CLB và cấp tài khoản</h3>
-          <p className="text-sm text-secondary">Hệ thống tự tạo email từ mã CLB, mật khẩu mặc định 123456 và yêu cầu đổi mật khẩu ở lần đăng nhập đầu tiên.</p>
+          <p className="text-sm text-secondary">Hệ thống tự tạo email từ mã CLB, liên kết mời thiết lập mật khẩu mật khẩu riêng và yêu cầu đổi mật khẩu ở lần đăng nhập đầu tiên.</p>
         </div>
 
         {message && <div className={`notice ${message.startsWith("Đã") ? "notice-success" : "notice-error"} mb-4`}>{message}</div>}
@@ -162,7 +162,7 @@ export function ClubManager({
                     <td data-label="Thao tác">
                       <div className="flex gap-2">
                         <Button size="sm" variant="outline" loading={busy === club.id} onClick={() => provision(club.id)}>
-                          {account ? "Đặt lại 123456" : "Cấp tài khoản"}
+                          {account ? "Đặt lại mật khẩu riêng" : "Cấp tài khoản"}
                         </Button>
                         <Button size="sm" variant={club.is_active ? "danger" : "primary"} loading={busy === club.id} onClick={() => toggle(club)}>
                           {club.is_active ? "Ngừng sử dụng" : "Kích hoạt"}
@@ -186,3 +186,5 @@ export function ClubManager({
     </>
   );
 }
+
+

@@ -1,6 +1,7 @@
 import { env } from "@/lib/env";
-const REQUEST_TIMEOUT_MS = 55000;
+const REQUEST_TIMEOUT_MS = 45000;
 const RESPONSE_PREVIEW_LIMIT = 240;
+const RETRYABLE_CODES = new Set(["STORAGE_TIMEOUT", "STORAGE_NETWORK_ERROR"]);
 type StorageResponse<T> = {
     ok: boolean;
     data?: T;
@@ -161,15 +162,29 @@ export async function uploadEvidence(params: {
     fileName: string;
     mimeType: string;
     buffer: Buffer;
+    uploadKey: string;
 }) {
-    return callStorage<StoredFile>({
-        action: "upload",
-        applicationCode: params.applicationCode,
-        category: params.category,
-        fileName: params.fileName,
-        mimeType: params.mimeType,
-        base64: params.buffer.toString("base64"),
-    });
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+            return await callStorage<StoredFile>({
+                action: "upload",
+                applicationCode: params.applicationCode,
+                category: params.category,
+                fileName: params.fileName,
+                mimeType: params.mimeType,
+                base64: params.buffer.toString("base64"),
+                uploadKey: params.uploadKey,
+            });
+        }
+        catch (error) {
+            lastError = error;
+            if (!(error instanceof StorageGatewayError) || !RETRYABLE_CODES.has(error.code) || attempt === 2)
+                throw error;
+            await new Promise((resolve) => setTimeout(resolve, 500 * 2 ** attempt + Math.random() * 500));
+        }
+    }
+    throw lastError;
 }
 export async function downloadEvidence(fileId: string) {
     return callStorage<DownloadedFile>({ action: "download", fileId });

@@ -42,7 +42,7 @@ CLB-AI  -> clb-ai@dntu.edu.vn
 Mật khẩu khởi tạo:
 
 ```text
-123456
+liên kết mời thiết lập mật khẩu
 ```
 
 Tài khoản phải đổi mật khẩu ở lần đăng nhập đầu tiên.
@@ -83,7 +83,7 @@ pnpm dev
 - Sinh viên nhập MSSV; email được tạo thành `MSSV@dntu.edu.vn`.
 - Chi đoàn `22DTH1` dùng `22dth1@dntu.edu.vn`.
 - CLB dùng mã CLB viết thường trước `@dntu.edu.vn`.
-- Mật khẩu khởi tạo tài khoản đơn vị: `123456`.
+- Mật khẩu khởi tạo tài khoản đơn vị: `liên kết mời thiết lập mật khẩu`.
 - Tài khoản đơn vị bắt buộc đổi mật khẩu ngay lần đăng nhập đầu tiên.
 - Với 19 Chi đoàn được tạo sẵn từ database, mở `/branches` và dùng nút cấp tài khoản cho các Chi đoàn còn thiếu.
 
@@ -123,3 +123,4 @@ Sidebar được hiển thị cố định trên desktop và chuyển thành men
 - Database chặn đồng thời theo MSSV và email không phân biệt chữ hoa/thường.
 - Với database đang chạy, thực thi `supabase/hotfix/PREVENT_DUPLICATE_STUDENT_ACCOUNTS.sql`.
 - Xem `docs/PREVENT_DUPLICATE_STUDENT_ACCOUNTS.md`.
+

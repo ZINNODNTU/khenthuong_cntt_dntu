@@ -5,7 +5,7 @@ import { writeAudit } from "@/lib/audit";
 import { deleteEvidence } from "@/lib/apps-script-storage";
 import { createAdminClient } from "@/lib/supabase/admin";
 const schema = z.object({
-    achievements: z.string().min(20).max(15000),
+    achievements: z.string().trim().min(1, "Hãy nhập thành tích nổi bật.").max(15000),
     summary: z.string().max(8000).optional().default(""),
     resubmit: z.boolean().default(false),
 });

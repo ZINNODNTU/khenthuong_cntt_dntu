@@ -367,49 +367,32 @@ create table public.prior_awards (
 -- ---------------------------------------------------------------------
 create table public.evidences (
   id uuid primary key default gen_random_uuid(),
-  application_id uuid not null
-    references public.applications(id) on delete cascade,
-
-  parent_type text not null
-    check (parent_type in ('application', 'activity', 'award')),
+  application_id uuid not null references public.applications(id) on delete cascade,
+  parent_type text not null check (parent_type in ('application', 'activity', 'award')),
   parent_id uuid not null,
   category text not null,
-
+  upload_key text not null unique,
   drive_file_id text not null unique,
   file_name text not null,
-  mime_type text not null
-    check (mime_type in ('image/jpeg', 'image/png', 'image/webp')),
-  size_bytes bigint not null
-    check (size_bytes > 0),
-
+  mime_type text not null check (mime_type in ('image/jpeg', 'image/png', 'image/webp')),
+  size_bytes bigint not null check (size_bytes > 0),
   uploaded_by uuid not null references public.profiles(id),
-
   public_token uuid not null default gen_random_uuid() unique,
-  public_view_enabled boolean not null default true,
+  public_view_enabled boolean not null default false,
   created_at timestamptz not null default now(),
-
   constraint evidence_category_matches_parent check (
-    (
-      parent_type = 'application'
-      and category in ('portrait', 'main')
-    )
-    or
-    (
-      parent_type = 'activity'
-      and category in ('faculty', 'university')
-    )
-    or
-    (
-      parent_type = 'award'
-      and category = 'award'
-    )
+    (parent_type = 'application' and category in ('portrait', 'main'))
+    or (parent_type = 'activity' and category in ('faculty', 'university'))
+    or (parent_type = 'award' and category = 'award')
   )
 );
-
 create unique index evidences_one_portrait_per_application
   on public.evidences (application_id)
   where parent_type = 'application'
     and category = 'portrait';
+
+create index evidences_parent_lookup
+  on public.evidences (application_id, parent_type, parent_id, category);
 
 -- ---------------------------------------------------------------------
 -- REVIEW AND AUDIT

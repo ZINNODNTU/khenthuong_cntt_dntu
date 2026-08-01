@@ -24,6 +24,11 @@ export async function POST(request: Request) {
     const parentType = String(fd.get("parentType") || "");
     const parentId = String(fd.get("parentId") || "");
     const category = String(fd.get("category") || "main");
+    const uploadKey = String(fd.get("uploadKey") || "").trim();
+    const requestId = crypto.randomUUID();
+    const startedAt = Date.now();
+    if (!uploadKey || uploadKey.length > 500)
+        return NextResponse.json({ error: "Khóa upload không hợp lệ" }, { status: 400 });
     if (!(file instanceof File))
         return NextResponse.json({ error: "Thiếu ảnh" }, { status: 400 });
     if (!(IMAGE_MIME_TYPES as readonly string[]).includes(file.type))
@@ -45,6 +50,9 @@ export async function POST(request: Request) {
         if (!data)
             return NextResponse.json({ error: "Khen thưởng không hợp lệ" }, { status: 400 });
     }
+    const uploadLookup = await supabase.from("evidences").select("id,drive_file_id,file_name,mime_type,size_bytes").eq("upload_key", uploadKey).maybeSingle();
+    if (uploadLookup.data)
+        return NextResponse.json({ evidence: uploadLookup.data, reused: true }, { status: 200 });
     if (category === "portrait") {
         const { count } = await supabase.from("evidences").select("id", { count: "exact", head: true }).eq("application_id", applicationId).eq("category", "portrait");
         if (count)
@@ -56,21 +64,33 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Nội dung tệp không đúng định dạng ảnh đã khai báo" }, { status: 415 });
     let storageFileId = "";
     try {
-        const uploaded = await uploadEvidence({ applicationCode: applicationCode || app.code, category, fileName: file.name, mimeType: detected, buffer });
+        const storageStartedAt = Date.now();
+        const uploaded = await uploadEvidence({ applicationCode: applicationCode || app.code, category, fileName: file.name, mimeType: detected, buffer, uploadKey });
+        const storageMs = Date.now() - storageStartedAt;
         storageFileId = uploaded.id;
-        const { data, error } = await supabase.from("evidences").insert({ application_id: applicationId, parent_type: parentType, parent_id: parentId, category, drive_file_id: uploaded.id, file_name: uploaded.name || file.name, mime_type: detected, size_bytes: Number(uploaded.size || file.size), uploaded_by: user.id }).select().single();
-        if (error)
+        const baseRow = { application_id: applicationId, parent_type: parentType, parent_id: parentId, category, drive_file_id: uploaded.id, file_name: uploaded.name || file.name, mime_type: detected, size_bytes: Number(uploaded.size || file.size), uploaded_by: user.id };
+        let insertResult = await supabase.from("evidences").insert({ ...baseRow, upload_key: uploadKey }).select().single();
+        if (insertResult.error && /upload_key/i.test(insertResult.error.message))
+            insertResult = await supabase.from("evidences").insert(baseRow).select().single();
+        const { data, error } = insertResult;
+        if (error) {
+            const { data: existing } = await supabase.from("evidences").select("id,drive_file_id,file_name,mime_type,size_bytes").eq("drive_file_id", uploaded.id).maybeSingle();
+            if (existing) return NextResponse.json({ evidence: existing, reused: true }, { status: 200 });
             throw error;
+        }
         await writeAudit(supabase, user.id, "evidence.upload", "evidence", data.id, { applicationId, parentType, category });
+        console.info("[evidence.upload.ok]", { requestId, applicationId, category, bytes: file.size, storageMs, totalMs: Date.now() - startedAt });
         return NextResponse.json({ evidence: data }, { status: 201 });
     }
     catch (error) {
         if (storageFileId)
             await deleteEvidence(storageFileId);
         console.error("[evidence.upload]", {
+            requestId,
             applicationId,
             category,
             parentType,
+            totalMs: Date.now() - startedAt,
             error,
         });
         if (error instanceof StorageGatewayError) {
