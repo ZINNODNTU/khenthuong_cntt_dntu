@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {
   Activity, AlertTriangle, ArrowRight, CalendarRange, CheckCircle2,
-  CircleAlert, Clock3, FileCheck2, Files, Gauge, History, Radio, Users,
+  CircleAlert, Clock3, ClipboardCheck, FileCheck2, Files, Gauge, History, Radio, Users,
   ShieldAlert, ImageIcon,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -14,6 +14,8 @@ import type { ApplicationStatus } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
+import { ChevronDown, Sparkles } from "lucide-react";
+import "./dashboard-upgrade.css";
 
 const STATUS_MONITOR: { key: ApplicationStatus; label: string; tone: string }[] = [
   { key: "draft", label: "Bản nháp", tone: "muted" },
@@ -90,7 +92,7 @@ function StatusDonut({ completed, processing, revision, total }: {
   );
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
   const { supabase } = await requireRole(["admin"]);
   const periods = await getEvaluationPeriods(supabase);
   const now = Date.now();
@@ -98,29 +100,55 @@ export default async function DashboardPage() {
     period.status === "open" && now >= new Date(period.starts_at).getTime() && now <= new Date(period.ends_at).getTime()
   );
 
+  const requestedPeriod = (await searchParams).period || "current";
+  const validPeriod = periods.find(period => period.id === requestedPeriod);
+  const selectedPeriod = requestedPeriod === "all" ? null : validPeriod || open || null;
+  const scope = requestedPeriod === "all" ? "all" : validPeriod?.id || "current";
+
   let appsQuery = supabase
     .from("applications")
-    .select("id,code,subject_name,branch_code,application_type,collective_type,status,updated_at,submitted_at,decided_at")
+    .select("id,code,subject_name,branch_code,application_type,collective_type,status,updated_at,submitted_at,decided_at", { count: "exact" })
+    .eq("application_type", "individual")
     .order("updated_at", { ascending: false });
-  if (open) appsQuery = appsQuery.eq("evaluation_period_id", open.id);
+  if (selectedPeriod) appsQuery = appsQuery.eq("evaluation_period_id", selectedPeriod.id);
 
-  const [appsResult, branches, auditResult, countsResult, profileResult, evidenceResult] = await Promise.all([
-    appsQuery,
+  // Fetch every page; default PostgREST row limits otherwise produce misleading totals.
+  async function loadAllApplications(): Promise<MonitorApplication[]> {
+    const first = await appsQuery.range(0, 499);
+    if (first.error) throw new Error("Không thể tải số liệu hồ sơ.");
+    const result = [...(first.data || [])] as MonitorApplication[];
+    const total = first.count || 0;
+    for (let offset = 500; offset < total; offset += 500) {
+      let pageQuery = supabase.from("applications")
+        .select("id,code,subject_name,branch_code,application_type,collective_type,status,updated_at,submitted_at,decided_at")
+        .eq("application_type", "individual")
+        .order("updated_at", { ascending: false }).range(offset, offset + 499);
+      if (selectedPeriod) pageQuery = pageQuery.eq("evaluation_period_id", selectedPeriod.id);
+      const page = await pageQuery;
+      if (page.error) throw new Error("Không thể tải đầy đủ số liệu hồ sơ.");
+      result.push(...(page.data || []) as MonitorApplication[]);
+    }
+    return result;
+  }
+
+  const [applications, branches, auditResult, countsResult, totalProfiles, activeProfiles, evidenceResult] = await Promise.all([
+    loadAllApplications(),
     getActiveBranchCodes(supabase),
     supabase.from("audit_logs").select("id,action,entity_type,created_at").order("created_at", { ascending: false }).limit(7),
     supabase.from("applications").select("application_type", { count: "exact", head: true }).eq("application_type", "individual"),
-    supabase.from("profiles").select("id,is_active"),
+    supabase.from("profiles").select("id", { count: "exact", head: true }),
+    supabase.from("profiles").select("id", { count: "exact", head: true }).eq("is_active", true),
     supabase.from("evidences").select("id", { count: "exact", head: true }),
   ]);
 
-  const applications = (appsResult.data || []) as MonitorApplication[];
-  const totalAccounts = profileResult.data?.length || 0;
-  const activeAccounts = profileResult.data?.filter((p) => p.is_active).length || 0;
+
+  const totalAccounts = totalProfiles.count ?? 0;
+  const activeAccounts = activeProfiles.count ?? 0;
   const evidenceCount = evidenceResult.count ?? 0;
 
   const totalMembers = countsResult.count ?? 0;
   const membersSubmitted = applications.filter((a) => a.application_type === "individual").length;
-  const memberRate = totalMembers ? Math.round((membersSubmitted / totalMembers) * 100) : 0;
+
 
   const counts = Object.fromEntries(STATUS_MONITOR.map(({ key }) => [key, 0])) as Record<ApplicationStatus, number>;
   applications.forEach((application) => { counts[application.status] += 1; });
@@ -156,31 +184,57 @@ export default async function DashboardPage() {
       <PageHeader
         eyebrow="TRUNG TÂM GIÁM SÁT"
         title="Tổng quan vận hành"
-        description={open ? `Đợt đang mở: ${open.name}` : "Chưa có đợt xét đang mở — số liệu hiển thị toàn hệ thống."}
+        description={selectedPeriod ? `Phạm vi đang xem: ${selectedPeriod.name}` : "Số liệu tổng hợp toàn hệ thống."}
       >
         <Link href="/periods"><Button variant="outline"><CalendarRange size={16} />Quản lý đợt xét</Button></Link>
         <Link href="/review"><Button><Radio size={16} />Mở hàng đợi ({queue.length})</Button></Link>
       </PageHeader>
 
-      <div className={`monitor-status ${open ? "is-live" : "is-idle"}`} role="status">
+      <form className="monitor-scope-filter" method="get" action="/dashboard" role="search" aria-label="Chọn phạm vi thống kê">
+        <label htmlFor="monitor-period">Phạm vi thống kê</label>
+        <select id="monitor-period" name="period" defaultValue={scope} className="select">
+          <option value="current">Đợt đang mở (mặc định)</option>
+          <option value="all">Toàn hệ thống</option>
+          {periods.map(period => <option key={period.id} value={period.id}>{period.name}</option>)}
+        </select>
+        <Button type="submit" variant="outline">Áp dụng</Button>
+      </form>
+      <div className={`monitor-status ${open && selectedPeriod?.id === open.id ? "is-live" : "is-idle"}`} role="status">
         <span className="monitor-status-pulse" aria-hidden="true" />
-        <div><strong>{open ? "Đang giám sát trực tiếp" : "Chế độ tổng hợp"}</strong><span>Cập nhật lúc {new Intl.DateTimeFormat("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Asia/Ho_Chi_Minh" }).format(new Date(now))}</span></div>
-        {open && <span className="monitor-period-end">Kết thúc {formatDate(open.ends_at)}</span>}
+        <div><strong>{open && selectedPeriod?.id === open.id ? "Đợt xét đang mở" : "Số liệu tổng hợp"}</strong><span>Cập nhật lúc {new Intl.DateTimeFormat("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Asia/Ho_Chi_Minh" }).format(new Date(now))}</span></div>
+        {selectedPeriod && <span className="monitor-period-end">Kết thúc {formatDate(selectedPeriod.ends_at)}</span>}
       </div>
 
-      {/* 10 KPI cards */}
+      <section className="monitor-focus" aria-label="Ưu tiên điều hành">
+        <div className="monitor-focus-copy">
+          <span className="monitor-focus-kicker"><Sparkles size={15} /> ĐIỀU HÀNH THÔNG MINH</span>
+          <h2>{queue.length ? `${queue.length} hồ sơ cần được thẩm định` : "Hàng đợi đang được xử lý tốt"}</h2>
+          <p>{critical.length ? `${critical.length} hồ sơ chưa cập nhật từ 7 ngày trở lên. Ưu tiên kiểm tra các trường hợp này.` : "Theo dõi tiến độ xét duyệt và những hồ sơ đang cần bổ sung minh chứng."}</p>
+        </div>
+        <div className="monitor-focus-actions">
+          <Link href="/review"><ClipboardCheck size={16} /> Xét duyệt ngay <ArrowRight size={15} /></Link>
+          <Link href="/admin/pending">Việc cần xử lý <ArrowRight size={15} /></Link>
+        </div>
+      </section>
+      {/* KPI ưu tiên và số liệu mở rộng */}
       <div className="monitor-kpi-grid">
-        <KpiCard label="Tổng hồ sơ" value={applications.length} note={open ? "Trong đợt hiện tại" : "Toàn hệ thống"} icon={Files} />
+        <KpiCard label="Tổng hồ sơ" value={applications.length} note={selectedPeriod ? "Trong phạm vi đang xem" : "Toàn hệ thống"} icon={Files} />
         <KpiCard label="Cần xử lý" value={queue.length} note={`${counts.submitted} mới · ${counts.review} đang xét`} icon={Clock3} tone="warning" href="/review" />
-        <KpiCard label="Quá hạn ≥ 3 ngày" value={stale.length} note={critical.length ? `${critical.length} hồ sơ trên 7 ngày` : "Không có mức nghiêm trọng"} icon={AlertTriangle} tone={critical.length ? "danger" : "success"} href="/review" />
+        <KpiCard label="Chờ ≥ 3 ngày" value={stale.length} note={critical.length ? `${critical.length} hồ sơ trên 7 ngày` : "Không có mức nghiêm trọng"} icon={AlertTriangle} tone={critical.length ? "danger" : "success"} href="/review" />
         <KpiCard label="Chờ bổ sung" value={counts.revision} note="Đang chờ người nộp phản hồi" icon={CircleAlert} tone="danger" href="/applications?status=revision" />
         <KpiCard label="Tỷ lệ hoàn tất" value={`${completionRate}%`} note={`${completed}/${applications.length} hồ sơ đã kết luận`} icon={Gauge} tone="success" />
+      </div>
+      <details className="monitor-more">
+        <summary>Thống kê tài khoản, minh chứng và đợt xét <ChevronDown size={17} /></summary>
+        <div className="monitor-kpi-grid">
         <KpiCard label="Tổng tài khoản" value={totalAccounts} note={`${activeAccounts} đang hoạt động`} icon={Users} href="/admin/users" />
         <KpiCard label="Tài khoản hoạt động" value={activeAccounts} note={`${totalAccounts - activeAccounts} đã khóa`} icon={ShieldAlert} tone={activeAccounts > totalAccounts * 0.5 ? "success" : "warning"} href="/admin/users" />
         <KpiCard label="Minh chứng" value={evidenceCount} note="Tổng số tệp tin" icon={ImageIcon} href="/admin/evidences" />
         <KpiCard label="Đã nộp tuần này" value={submittedThisWeek} note="Hồ sơ mới trong 7 ngày" icon={Activity} />
         <KpiCard label="Đợt sắp kết thúc" value={endingSoon.length} note={endingSoon.length ? "Cần gia hạn hoặc đóng" : "Không có"} icon={CalendarRange} tone={endingSoon.length ? "danger" : "success"} href="/periods" />
       </div>
+
+      </details>
 
       <div className="monitor-primary-grid">
         <section className="card monitor-panel">
@@ -214,7 +268,7 @@ export default async function DashboardPage() {
           <div className="monitor-alert-list">
             {queue.slice(0, 6).map((application) => {
               const age = ageInDays(application.updated_at, now);
-              return <Link href={`/applications/${application.id}`} className={`monitor-alert-row ${age >= 7 ? "is-critical" : age >= 3 ? "is-warning" : ""}`} key={application.id}>
+              return <Link href={`/review/${application.id}`} className={`monitor-alert-row ${age >= 7 ? "is-critical" : age >= 3 ? "is-warning" : ""}`} key={application.id}>
                 <span className="monitor-alert-age">{age} ngày</span>
                 <span className="monitor-alert-content"><strong>{application.subject_name}</strong><small>{application.code} · {application.branch_code || "CLB"}</small></span>
                 <StatusBadge status={application.status} />
@@ -232,9 +286,9 @@ export default async function DashboardPage() {
           <div className="monitor-coverage-bar"><span style={{ width: `${coverageRate}%` }} /></div>
           <p className="monitor-panel-caption">{coveredBranches.size}/{branches.length} Chi đoàn đã có hồ sơ trong phạm vi đang xem</p>
           <div className="monitor-coverage-stats">
-            <div><Users size={20} /><div><strong>{totalMembers.toLocaleString("vi-VN")}</strong><span>Đoàn viên có hồ sơ</span></div></div>
-            <div><CheckCircle2 size={20} /><div><strong>{membersSubmitted.toLocaleString("vi-VN")}</strong><span>Hồ sơ đã nộp</span></div></div>
-            <div><Activity size={20} /><div><strong>{memberRate}%</strong><span>Tỷ lệ tham gia</span></div></div>
+            <div><Users size={20} /><div><strong>{totalMembers.toLocaleString("vi-VN")}</strong><span>Hồ sơ cá nhân toàn hệ thống</span></div></div>
+            <div><CheckCircle2 size={20} /><div><strong>{membersSubmitted.toLocaleString("vi-VN")}</strong><span>Hồ sơ cá nhân trong phạm vi</span></div></div>
+            <div><Activity size={20} /><div><strong>{coveredBranches.size}</strong><span>Chi đoàn có hồ sơ</span></div></div>
           </div>
           <div className="monitor-branch-grid">
             {branches.map((branch) => {
@@ -273,7 +327,7 @@ export default async function DashboardPage() {
                   <td data-label="Mã"><b>{application.code}</b></td>
                   <td data-label="Đối tượng"><Link className="font-medium monitor-table-link" href={`/applications/${application.id}`}>{application.subject_name}</Link></td>
                   <td data-label="Đơn vị" className="text-secondary">{application.branch_code || "CLB"}</td>
-                  <td data-label="Loại" className="text-secondary">{application.application_type === "individual" ? "Cá nhân" : application.collective_type === "club" ? "Tập thể CLB" : "Tập thể Chi đoàn"}</td>
+                  <td data-label="Loại" className="text-secondary">Cá nhân</td>
                   <td data-label="Trạng thái"><StatusBadge status={application.status} /></td>
                   <td data-label="Cập nhật" className="text-secondary">{formatDate(application.updated_at)}</td>
                 </tr>

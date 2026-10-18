@@ -28,7 +28,7 @@ function values(p: {
     allowBranchCollective: boolean;
     allowClubCollective: boolean;
 }) {
-    return { name: p.name, description: p.description || null, starts_at: p.startsAt, ends_at: p.endsAt, evidence_starts_on: p.evidenceStartsOn, evidence_ends_on: p.evidenceEndsOn, status: p.status, allow_individual: p.allowIndividual, allow_branch_collective: p.allowBranchCollective, allow_club_collective: p.allowClubCollective };
+    return { name: p.name, description: p.description || null, starts_at: p.startsAt, ends_at: p.endsAt, evidence_starts_on: p.evidenceStartsOn, evidence_ends_on: p.evidenceEndsOn, status: p.status, allow_individual: p.allowIndividual, allow_branch_collective: false, allow_club_collective: false };
 }
 export async function POST(request: Request) {
     const auth = await requireAdmin();

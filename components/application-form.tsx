@@ -198,6 +198,20 @@ export function ApplicationForm({
         throw new Error(`Hoạt động “${invalidActivity.name || "chưa đặt tên"}” cần ngày từ ${evidenceStart} đến ${evidenceEnd}.`);
       if (requestedStatus === "submitted" && invalidAward)
         throw new Error(`Khen thưởng “${invalidAward.title || "chưa đặt tên"}” cần ngày cấp từ ${evidenceStart} đến ${evidenceEnd}.`);
+      if (requestedStatus === "submitted" && isIndividual) {
+        const conduct = String(f.get("conductRating") || "");
+        const gpa = String(f.get("cumulativeGpa") || "") ? Number(f.get("cumulativeGpa")) : null;
+        const discipline = String(f.get("disciplinaryStatus") || "");
+        if (!["Tốt", "Xuất sắc"].includes(conduct)) {
+          throw new Error("C7: Kết quả rèn luyện phải đạt Tốt hoặc Xuất sắc.");
+        }
+        if (gpa === null || !Number.isFinite(gpa) || gpa < 2.8 || gpa > 4) {
+          throw new Error("C8: GPA tích lũy phải đạt từ 2,80 đến 4,00.");
+        }
+        if (discipline !== "none") {
+          throw new Error("C9: Không được có kỷ luật từ mức khiển trách trở lên trong năm học.");
+        }
+      }
       const payload = {
         status: "draft",
         evaluationPeriodId: periodId,
@@ -215,6 +229,10 @@ export function ApplicationForm({
         initiatives: String(f.get("initiatives") || ""),
         impact: String(f.get("impact") || ""),
         summary: String(f.get("summary") || summary),
+        conductRating: (String(f.get("conductRating") || "") || null),
+        cumulativeGpa: String(f.get("cumulativeGpa") || "") ? Number(f.get("cumulativeGpa")) : null,
+        disciplinaryStatus: String(f.get("disciplinaryStatus") || "none"),
+        disciplinaryNote: String(f.get("disciplinaryNote") || ""),
         activities: activities.map(({ images, ...a }) => ({ clientKey: a.key, ...a })),
         priorAwards: awards.map(({ images, key, ...a }) => ({ clientKey: key, ...a })),
       };
@@ -578,6 +596,16 @@ export function ApplicationForm({
               <div className="evidence-summary-row" role="row"><span>Giấy chứng nhận</span><strong>{evidenceStats.certificates}</strong><strong>{awards.filter((a) => a.awardType === "certificate").reduce((n, a) => n + a.images.length, 0)}</strong><span>{awards.filter((a) => a.awardType === "certificate" && a.title.trim() && a.decisionNumber.trim() && a.issuer.trim() && a.images.length).length}/{evidenceStats.certificates}</span></div>
               <div className="evidence-summary-row" role="row"><span>Bằng khen</span><strong>{evidenceStats.commendations}</strong><strong>{awards.filter((a) => a.awardType === "commendation").reduce((n, a) => n + a.images.length, 0)}</strong><span>{awards.filter((a) => a.awardType === "commendation" && a.title.trim() && a.decisionNumber.trim() && a.issuer.trim() && a.images.length).length}/{evidenceStats.commendations}</span></div>
               <div className="evidence-summary-row is-total" role="row"><span>Tổng minh chứng</span><strong>{activities.length + awards.length}</strong><strong>{evidenceStats.totalImages}</strong><span>{evidenceStats.completeActivities + evidenceStats.completeAwards}/{activities.length + awards.length}</span></div>
+            </div>
+            <p className="text-sm text-secondary" style={{ marginTop: "var(--space-3)" }}>
+              Vui lòng đối chiếu C7–C9 với giấy tờ chính thức trước khi gửi.
+              {" "}<a href="/criteria" target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-primary)", fontWeight: 700 }}>Xem khung 9 tiêu chí và hướng dẫn minh chứng ↗</a>
+            </p>
+            <div className="form-grid" style={{ marginTop: "var(--space-4)" }}>
+              <div className="field"><label className="field-label">7. Kết quả rèn luyện *</label><select className="select" name="conductRating" defaultValue=""><option value="">Chưa khai</option><option value="Xuất sắc">Xuất sắc</option><option value="Tốt">Tốt</option><option value="Khá">Khá</option><option value="Trung bình">Trung bình</option><option value="Yếu">Yếu</option></select><span className="field-helper">Tiêu chí yêu cầu Tốt trở lên.</span></div>
+              <div className="field"><label className="field-label">8. ĐTB tích lũy / 4,00 *</label><input className="input" name="cumulativeGpa" type="number" min="0" max="4" step="0.01" placeholder="Ví dụ: 3.20" /><span className="field-helper">Mức đề xuất 2,80/4,00 hiện đang được hệ thống áp dụng; đối chiếu bảng điểm chính thức.</span></div>
+              <div className="field"><label className="field-label">9. Kỷ luật trong năm học *</label><select className="select" name="disciplinaryStatus" defaultValue="none"><option value="none">Không vi phạm quy định/quy chế và không bị kỷ luật</option><option value="warning">Có nhắc nhở hoặc vi phạm cần xác minh mức xử lý</option><option value="reprimand_or_higher">Có kỷ luật từ khiển trách trở lên</option></select></div>
+              <div className="field"><label className="field-label">Ghi chú kỷ luật</label><input className="input" name="disciplinaryNote" maxLength={3000} placeholder="Nếu có, ghi rõ quyết định hoặc nội dung liên quan." /></div>
             </div>
             <input type="hidden" name="summary" value={summary} />
             <p className="evidence-auto-summary"><Info size={15} />{summary}</p>

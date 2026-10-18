@@ -11,5 +11,6 @@ export const STATUS_LABEL: Record<ApplicationStatus, string> = {
     revision: "Yêu cầu bổ sung", passed: "Đạt", failed: "Không đạt"
 };
 export const IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+export const EVIDENCE_MIME_TYPES = [...IMAGE_MIME_TYPES, "application/pdf"] as const;
 export const REVIEWER_ROLES = ["admin", "reviewer"] as const;
 export const PAGE_SIZE = 25;

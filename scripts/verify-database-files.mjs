@@ -16,11 +16,55 @@ const setupFile = resolve(
   "supabase/database/01_SETUP_DATABASE.sql",
 );
 
+const criteriaFile = resolve(
+  process.cwd(),
+  "supabase/database/02_CRITERIA_9.sql",
+);
+
+const workflowFile = resolve(process.cwd(), "supabase/database/03_REVIEW_WORKFLOW.sql");
+const scoringFile = resolve(process.cwd(), "supabase/database/04_AWARD_SCORING.sql");
+
 if (!existsSync(resetFile)) fail("Missing 00_RESET_DATABASE.sql");
 if (!existsSync(setupFile)) fail("Missing 01_SETUP_DATABASE.sql");
+if (!existsSync(criteriaFile)) fail("Missing 02_CRITERIA_9.sql");
+if (!existsSync(workflowFile)) fail("Missing 03_REVIEW_WORKFLOW.sql");
+if (!existsSync(scoringFile)) fail("Missing 04_AWARD_SCORING.sql");
 
-if (existsSync(resolve(process.cwd(), "supabase/migrations"))) {
-  fail("Legacy supabase/migrations directory must not exist.");
+// Verify the deployed CLI migrations match the maintained source SQL.
+for (const [source, filename] of [
+  [setupFile, "20261008140001_initial_award_schema.sql"],
+  [criteriaFile, "20261008140002_criteria_nine.sql"],
+  [workflowFile, "20261008140003_review_workflow.sql"],
+  [scoringFile, "20261008140004_award_scoring.sql"],
+  [resolve(process.cwd(), "supabase/database/07_EVIDENCE_ENTRIES.sql"), "20261009100000_evidence_entries.sql"],
+  [resolve(process.cwd(), "supabase/database/08_COLLECTIVE_CRITERIA_T.sql"), "20261009110000_collective_criteria_t_codes.sql"],
+    [resolve(process.cwd(), "supabase/database/09_EVIDENCE_CONTENT_INTEGRITY.sql"), "20261009120000_evidence_content_integrity.sql"],
+]) {
+  const target = resolve(process.cwd(), "supabase/migrations", filename);
+  if (!existsSync(target)) {
+    fail(`Missing Supabase CLI migration: ${filename}`);
+  } else if (existsSync(source) && readFileSync(source, "utf8") !== readFileSync(target, "utf8")) {
+    fail(`Supabase CLI migration differs from source: ${filename}`);
+  }
+}
+
+const installerFile = resolve(process.cwd(), "supabase/database/INSTALL_NEW_PROJECT.sql");
+if (!existsSync(installerFile)) {
+  fail("Missing INSTALL_NEW_PROJECT.sql");
+} else {
+  const installer = readFileSync(installerFile, "utf8");
+  for (const marker of [
+    "BEGIN 06_SECURITY_HARDENING.sql",
+    "BEGIN 07_EVIDENCE_ENTRIES.sql",
+    "BEGIN 08_COLLECTIVE_CRITERIA_T.sql",
+    "BEGIN 09_EVIDENCE_CONTENT_INTEGRITY.sql",
+    "evidences_content_sha256_check",
+  ]) {
+    if (!installer.includes(marker)) fail("New-project installer missing " + marker);
+  }
+  if (installer.includes("BEGIN 00_RESET_DATABASE.sql")) {
+    fail("The non-destructive installer must NEVER contain reset SQL");
+  }
 }
 
 if (existsSync(resetFile)) {
@@ -39,6 +83,9 @@ if (existsSync(resetFile)) {
 
 if (existsSync(setupFile)) {
   const setup = readFileSync(setupFile, "utf8");
+  const criteria = readFileSync(criteriaFile, "utf8");
+  const workflow = existsSync(workflowFile) ? readFileSync(workflowFile, "utf8") : "";
+  const scoring = existsSync(scoringFile) ? readFileSync(scoringFile, "utf8") : "";
 
   for (const token of [
     "create table public.profiles",
@@ -58,6 +105,37 @@ if (existsSync(setupFile)) {
     if (!setup.includes(token)) {
       fail(`Setup file is missing: ${token}`);
     }
+  }
+
+  for (const token of ["create table if not exists public.application_criteria", "C1", "C9", "verify_application_criterion", "enable row level security", "revoke all on table public.application_criteria", "guard_passed_application_criteria", "reset_application_criteria_on_resubmit"]) {
+    if (!criteria.includes(token)) fail(`Criteria file is missing: ${token}`);
+  }
+
+  for (const token of [
+    "create table if not exists public.criterion_review_history",
+    "create table if not exists public.review_action_permits",
+    "review_assigned_criterion",
+    "assign_application_review",
+    "record_application_decision",
+    "guard_review_change_to_rpc",
+    "guard_criterion_snapshot",
+    "revoke insert, update, delete on public.review_history",
+    "criteria_snapshot jsonb",
+  ]) {
+    if (!workflow.includes(token)) fail(`Review workflow file is missing: ${token}`);
+  }
+
+  for (const token of [
+    "create table if not exists public.award_rubrics",
+    "create table if not exists public.award_score_entries",
+    "create table if not exists public.award_score_history",
+    "configure_award_rubric",
+    "score_award_criterion",
+    "guard_award_score_decision",
+    "snapshot_award_score_decision",
+    "revoke all on public.award_score_entries",
+  ]) {
+    if (!scoring.includes(token)) fail(`Scoring file is missing: ${token}`);
   }
 
   const branchCount = (

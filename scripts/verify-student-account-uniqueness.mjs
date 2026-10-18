@@ -26,11 +26,12 @@ const registerRoute = readFileSync(
 );
 
 for (const token of [
-  "student_account_registry",
-  "publicStudentRegistrationSchema",
-  "isObfuscatedExistingUser",
-  "status: 409",
-  "auth.signUp",
+  "studentRegistrationSchema.safeParse",
+  'enforceRateLimit("register:email"',
+  "data.user.identities.length === 0",
+  "return respond({ error:",
+  "409",
+  "auth.auth.signUp",
 ]) {
   if (!registerRoute.includes(token)) {
     fail(`Register route is missing ${token}`);

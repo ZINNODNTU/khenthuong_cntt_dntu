@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { EvidenceGallery } from "@/components/evidence-gallery";
+import { CriterionEvidenceSummary } from "@/components/criterion-evidence-summary";
 import { StatusBadge } from "@/components/status-badge";
 import type { Application } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
@@ -48,7 +49,7 @@ export function ApplicationDetail({ app, canReview, canSupplement = false, canDe
   const faculty = (app.activities || []).filter((a) => a.level === "faculty");
   const university = (app.activities || []).filter((a) => a.level === "university");
   const portrait = (app.evidences || []).filter((e) => e.parent_type === "application" && e.category === "portrait");
-  const main = (app.evidences || []).filter((e) => e.parent_type === "application" && e.category !== "portrait");
+  const main = (app.evidences || []).filter((e) => e.parent_type === "application" && e.category === "main");
   const awards = app.prior_awards || [];
   const totalActivities = faculty.length + university.length;
 
@@ -62,6 +63,9 @@ export function ApplicationDetail({ app, canReview, canSupplement = false, canDe
         </div>
         <div className="page-header-actions">
           <StatusBadge status={app.status} />
+          {app.decided_at && ["passed","failed","revision"].includes(app.status) && (
+            <Link href={`/applications/${app.id}/report`}><Button variant="outline">In phiếu kết quả</Button></Link>
+          )}
           {canSupplement && (<Link href={`/applications/${app.id}/supplement`}><Button variant="outline">{app.status === "draft" ? "Tiếp tục hồ sơ" : "Bổ sung hồ sơ"}</Button></Link>)}
           {canReview && (<Link href={`/review/${app.id}`}><Button variant="primary">Mở xét duyệt</Button></Link>)}
           {canDelete && <DeleteApplicationButton id={app.id} code={app.code} subjectName={app.subject_name} status={app.status} />}
@@ -103,6 +107,8 @@ export function ApplicationDetail({ app, canReview, canSupplement = false, canDe
         <div className="achievement-text">{app.achievements}</div>
         {main.length > 0 && (<details open className="achievement-evidence-detail"><summary className="achievement-evidence-summary">Ảnh minh chứng · {main.length} ảnh</summary><EvidenceGallery items={main} /></details>)}
       </section>
+
+      {app.criteria && app.criteria.length > 0 && <CriterionEvidenceSummary app={app} />}
 
       <ActivityTable items={faculty} title="Hoạt động cấp khoa" />
       <ActivityTable items={university} title="Hoạt động cấp trường" />

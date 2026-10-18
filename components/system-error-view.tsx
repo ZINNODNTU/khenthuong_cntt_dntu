@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 
 export function SystemErrorView({
   code,
-  eyebrow = "HỆ THỐNG XÉT DUYỆT THÀNH TÍCH",
+  eyebrow = "KHEN THƯỞNG ĐOÀN – HỘI KHOA CNTT",
   title,
   message,
   detail,

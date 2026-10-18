@@ -1,64 +1,43 @@
-# Khoi tao database tu dau
+# Khởi tạo cơ sở dữ liệu Supabase cho CNTT
 
-## Canh bao
+**Hướng dẫn mới nhất:** `docs/SETUP_SUPABASE_NEW_PROJECT.md` (kiểm tra URL, quyền, tạo schema và admin). Tài liệu này không hướng dẫn xóa dữ liệu nữa.
 
-`00_RESET_DATABASE.sql` xoa:
+## 1. Project mới chưa có schema CNTT
 
-- Toan bo ho so.
-- Toan bo bang va cau hinh nghiep vu.
-- Toan bo tai khoan dang nhap.
-- Toan bo lich su xet duyet va nhat ky.
+1. Vào Supabase Dashboard → SQL Editor và xác nhận schema chưa có `public.profiles` và `public.applications`:
+   ```sql
+   select to_regclass('public.profiles'), to_regclass('public.applications');
+   ```
+2. Chạy `pnpm supabase:sql` trong workspace để tạo gói `supabase/database/INSTALL_NEW_PROJECT.sql`.
+3. Chủ project mở SQL Editor, kiểm tra gói và chạy bằng quyền owner. File đã bao gồm migration `01_SETUP_DATABASE.sql`, `02_CRITERIA_9.sql`, `03_REVIEW_WORKFLOW.sql`, `04_AWARD_SCORING.sql` theo thứ tự.
+4. Kiểm tra bảng, phân quyền/RLS và Auth trigger, sau đó chạy `pnpm supabase:check`.
 
-File reset khong xoa anh tren Google Drive.
+**Không chạy `00_RESET_DATABASE.sql`**. Script RESET xóa schema/ứng dụng và có thể xóa tài khoản đang tồn tại, không cần cho Supabase project mới.
 
-## Thu tu thuc hien
+## 2. Project đã có dữ liệu
 
-### 1. Xoa database cu
+- Sao lưu toàn bộ database, Auth users và chính sách RLS.
+- Đối chiếu các bảng và migration đã triển khai trên staging. **Không chạy gói cài mới hay 01_SETUP_DATABASE.sql** khi đã có bảng; chỉ áp dụng những migration còn thiếu.
+- Chạy tích hợp ba tài khoản admin/reviewer/submitter, thử chấm C1–C9, nhập điểm, đánh giá và xuất báo cáo trước khi cập nhật production.
 
-Mo SQL Editor va chay:
+## 3. Tạo tài khoản admin đầu tiên
 
-```text
-supabase/database/00_RESET_DATABASE.sql
-```
-
-### 2. Tao database moi
-
-Chay:
-
-```text
-supabase/database/01_SETUP_DATABASE.sql
-```
-
-### 3. Tao admin dau tien
-
-Dang nhap CLI:
+Sau khi database được tạo thành công, đăng nhập Supabase CLI bằng tài khoản quản trị project:
 
 ```powershell
 pnpm dlx supabase@latest login
+.\CREATE_INITIAL_ADMIN.ps1 -ProjectRef nzoamsyazdafyqnsxkny
 ```
 
-Sau do chay:
+Script sẽ hỏi email `@dntu.edu.vn`, họ tên và mật khẩu. Không lưu khóa bí mật trong source hoặc đưa vào chat.
 
-```text
-CREATE_INITIAL_ADMIN.bat
-```
-
-### 4. Khoi dong he thong
+## 4. Chạy web
 
 ```powershell
-pnpm install --no-frozen-lockfile
-pnpm verify
-pnpm db:verify
-pnpm typecheck
+pnpm supabase:check
+pnpm check
 pnpm build
 pnpm dev
 ```
 
-### 5. Cau hinh nghiep vu
-
-Dang nhap admin va thuc hien:
-
-1. Tao dot xet tai `/periods`.
-2. Them CLB tai `/clubs` neu can.
-3. Tao reviewer va submitter tai `/admin/users`.
-4. Kiem tra kho anh tai `/settings`.
+Các API cần `SUPABASE_SECRET_KEY` trong `.env.local` phía server. Kho minh chứng ảnh cần `GOOGLE_APPS_SCRIPT_WEB_APP_URL` và `GOOGLE_APPS_SCRIPT_SHARED_SECRET`. Chỉ bật đăng ký công khai sau khi có quy trình xác minh MSSV.

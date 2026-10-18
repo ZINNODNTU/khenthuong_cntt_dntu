@@ -95,8 +95,11 @@ const registerRoute = readFileSync(
 );
 
 for (const token of [
-  "email rate limit",
-  "/auth/confirm?next=/",
+  'enforceRateLimit("register:ip"',
+  'enforceRateLimit("register:email"',
+  'new URL("/auth/finish", env.appUrl())',
+  "auth.auth.signUp",
+  "requiresConfirmation: true",
 ]) {
   if (!registerRoute.includes(token)) {
     fail(`Register route is missing ${token}`);

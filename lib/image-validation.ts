@@ -1,3 +1,9 @@
+export function detectEvidenceMime(buffer: Buffer): "image/jpeg" | "image/png" | "image/webp" | "application/pdf" | null {
+    if (buffer.length >= 5 && buffer.subarray(0, 5).toString("ascii") === "%PDF-")
+        return "application/pdf";
+    return detectImageMime(buffer);
+}
+
 export function detectImageMime(buffer: Buffer): "image/jpeg" | "image/png" | "image/webp" | null {
     if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff)
         return "image/jpeg";

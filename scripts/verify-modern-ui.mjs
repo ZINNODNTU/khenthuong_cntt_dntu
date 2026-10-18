@@ -19,7 +19,11 @@ function read(file) {
 }
 
 const css = read("app/globals.css");
-const shell = read("components/app-shell.tsx");
+const sidebar = read("components/layout/sidebar.tsx");
+const topbar = read("components/layout/topbar.tsx");
+for (const token of ["aria-expanded", "cntt-theme"]) {
+  if (!topbar.includes(token)) fail(`Topbar is missing ${token}`);
+}
 const layout = read("app/layout.tsx");
 const modal = read("components/ui/modal.tsx");
 const inputs = read("components/ui/input.tsx");
@@ -36,8 +40,8 @@ for (const token of [
   if (!css.includes(token)) fail(`globals.css is missing ${token}`);
 }
 
-for (const token of ["SIDEBAR_STORAGE_KEY", "aria-pressed", "aria-expanded", "data-tooltip", "cntt-theme"]) {
-  if (!shell.includes(token)) fail(`AppShell is missing ${token}`);
+for (const token of ["SIDEBAR_STORAGE_KEY", "aria-pressed", "data-tooltip"]) {
+  if (!sidebar.includes(token)) fail(`Sidebar is missing ${token}`);
 }
 
 if (!layout.includes('import "./globals.css"')) fail("Root layout does not import globals.css.");

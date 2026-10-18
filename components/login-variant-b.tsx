@@ -63,7 +63,7 @@ export function LoginVariantB({ signupEnabled }: { signupEnabled: boolean }) {
       <div className="varB-card">
         <div className="varB-badge">
           <Sparkles size={14} />
-          <span>Xét duyệt thành tích</span>
+          <span>Xét khen thưởng Đoàn – Hội</span>
         </div>
 
         <div className="varB-logo-row">

@@ -1,4 +1,4 @@
-# Hệ thống xét duyệt thành tích Khoa CNTT — v1.0.0
+# Website xét khen thưởng cá nhân Đoàn – Hội Khoa Công nghệ thông tin — v1.0.0
 
 ## Thay đổi chính
 
@@ -49,16 +49,30 @@ Tài khoản phải đổi mật khẩu ở lần đăng nhập đầu tiên.
 
 Với 19 Chi đoàn có sẵn trong database, mở `/branches` và bấm **Cấp tài khoản cho các Chi đoàn còn thiếu**.
 
+## Đăng ký sinh viên bằng email trường
+
+Đăng ký tự phục vụ đã được bổ sung tại `/register`: chỉ nhận email sinh viên dạng `MSSV@dntu.edu.vn`, yêu cầu họ tên, Chi đoàn, ngày sinh và số điện thoại, đồng thời bắt buộc xác nhận email trước khi truy cập nộp/xét hồ sơ. Sinh viên có hồ sơ thiếu thông tin sẽ được chuyển sang `/complete-profile`. Xem `docs/EDU_STUDENT_REGISTRATION.md` để cấu hình SMTP/URL và kiểm thử nghiệm thu.
+
 ## Database
 
-Chỉ dùng đúng hai file:
+Để thiết lập **Supabase mới**, xem `docs/SETUP_SUPABASE_NEW_PROJECT.md`. Trên project thực sự chưa có schema CNTT, chạy `pnpm supabase:sql` để tạo `INSTALL_NEW_PROJECT.sql`; sau đó chủ project áp dụng bằng SQL Editor. Bộ gốc gồm các migration theo thứ tự:
 
 ```text
-supabase/database/00_RESET_DATABASE.sql
+-- KHÔNG chạy 00_RESET_DATABASE.sql (xóa dữ liệu)
 supabase/database/01_SETUP_DATABASE.sql
+supabase/database/02_CRITERIA_9.sql
+supabase/database/03_REVIEW_WORKFLOW.sql
+supabase/database/04_AWARD_SCORING.sql
+supabase/database/05_CRITERION_EVIDENCE_BINARY.sql
+supabase/database/06_SECURITY_HARDENING.sql
+supabase/database/07_EVIDENCE_ENTRIES.sql
+supabase/database/08_COLLECTIVE_CRITERIA_T.sql
+supabase/database/09_EVIDENCE_CONTENT_INTEGRITY.sql
 ```
 
-Sau khi chạy lại database:
+**Trước khi chạy SQL hãy sao lưu và kiểm tra schema hiện có**; nếu đã có bảng, không chạy lại file 01. Khởi tạo và kiểm tra kết nối: `pnpm supabase:check`. Phần API Auth 200 không chứng minh đã có bảng nghiệp vụ.
+
+Sau khi khởi tạo schema bằng tài khoản chủ Supabase:
 
 1. Tạo admin bằng `CREATE_INITIAL_ADMIN.bat`.
 2. Đăng nhập admin.
@@ -66,6 +80,10 @@ Sau khi chạy lại database:
 4. Thêm CLB tại `/clubs`; tài khoản CLB được tạo ngay.
 5. Tạo tài khoản sinh viên/cán bộ tại `/admin/users`.
 6. Tạo đợt xét tại `/periods`.
+7. Chỉ tiếp nhận hồ sơ **cá nhân C1–C9**. Thống nhất minh chứng và điều kiện theo `docs/TIEU_CHI_CA_NHAN_DOAN_HOI_2026-10-18.md` trước khi mở đợt xét.
+8. Người nộp cung cấp minh chứng theo từng tiêu chí; người xét duyệt chỉ xác nhận **Đạt / Không đạt**, không nhập hoặc tổng hợp điểm số.
+
+Xem `docs/TIEU_CHI_CA_NHAN_DOAN_HOI_2026-10-18.md` và `docs/GOOGLE_DRIVE_GATEWAY_V2_2026-10-09.md` để nghiệm thu nghiệp vụ và lưu tệp minh chứng. Chức năng chấm điểm là dữ liệu lịch sử, không áp dụng cho kết luận mới. Với database có dữ liệu thật **không chạy RESET**, chỉ bổ sung migration còn thiếu sau khi sao lưu và kiểm tra SQL ở staging.
 
 ## Chạy kiểm tra
 
@@ -73,6 +91,7 @@ Sau khi chạy lại database:
 pnpm install --no-frozen-lockfile
 pnpm verify
 pnpm db:verify
+pnpm criteria:test
 pnpm typecheck
 pnpm build
 pnpm dev
@@ -101,7 +120,7 @@ Sidebar được hiển thị cố định trên desktop và chuyển thành men
 - Sidebar desktop có thể mở/thu gọn và ghi nhớ trạng thái.
 - Mobile dùng menu drawer.
 - Nút trợ giúp trên topbar hiển thị hướng dẫn theo vai trò.
-- Design System nằm tại `app/modern-ui.css`.
+- Design System nằm tại `app/globals.css`.
 - Quy chuẩn UX nằm tại `docs/UI_UX_STANDARD.md`.
 
 

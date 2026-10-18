@@ -22,9 +22,8 @@ const adminGroups: NavGroup[] = [
   // Nhóm 2 — Nghiệp vụ xét khen thưởng
   { label: "Nghiệp vụ xét thưởng", items: [
     { href: "/periods", label: "Đợt xét thành tích", description: "Thời gian và phạm vi tiếp nhận", icon: CalendarRange },
-    { href: "/applications", label: "Hồ sơ thành tích", description: "Tất cả hồ sơ đã tiếp nhận", icon: Files },
-    { href: "/applications?type=collective", label: "Hồ sơ tập thể", description: "Tập thể Chi đoàn và CLB", icon: Users },
-    { href: "/applications?type=individual", label: "Hồ sơ cá nhân", description: "Cá nhân sinh viên", icon: User },
+    { href: "/criteria", label: "Tiêu chí cá nhân C1–C9", description: "Nội dung, yêu cầu và minh chứng", icon: ShieldCheck },
+    { href: "/applications", label: "Hồ sơ cá nhân", description: "Hồ sơ khen thưởng Đoàn – Hội", icon: Files },
     { href: "/review", label: "Thẩm định", description: "Xét duyệt hồ sơ", icon: ClipboardCheck },
     { href: "/review/objections", label: "Phản biện – Giải trình", description: "Xử lý khiếu nại", icon: MessageSquare },
     { href: "/results", label: "Kết quả xét duyệt", description: "Tổng hợp quyết định", icon: Award },
@@ -32,8 +31,8 @@ const adminGroups: NavGroup[] = [
   // Nhóm 3 — Quản lý dữ liệu
   { label: "Quản lý dữ liệu", items: [
     { href: "/admin/users", label: "Quản lý tài khoản", description: "Phân quyền và trạng thái", icon: ShieldCheck },
-    { href: "/branches", label: "Quản lý Chi đoàn", description: "Đơn vị và tài khoản đại diện", icon: Users },
-    { href: "/clubs", label: "Quản lý CLB", description: "CLB và tài khoản đại diện", icon: Building2 },
+    { href: "/branches", label: "Quản lý Chi đoàn", description: "Danh sách Chi đoàn sinh viên", icon: Users },
+    { href: "/clubs", label: "Quản lý CLB", description: "Danh sách câu lạc bộ", icon: Building2 },
     { href: "/admin/units", label: "Quản lý đơn vị", description: "Phân loại và trạng thái đơn vị", icon: Building },
     { href: "/admin/evidences", label: "Quản lý minh chứng", description: "Duyệt và xóa tệp", icon: FileImage },
   ]},
@@ -47,6 +46,7 @@ const adminGroups: NavGroup[] = [
 const reviewerGroups: NavGroup[] = [
   { label: "Xét duyệt", items: [
     { href: "/review", label: "Hồ sơ cần xét", description: "Danh sách đang chờ xử lý", icon: ClipboardCheck },
+    { href: "/criteria", label: "Tiêu chí cá nhân C1–C9", description: "Căn cứ thẩm định từng tiêu chí", icon: ListChecks },
     { href: "/results", label: "Kết quả đã xử lý", description: "Lịch sử và kết luận", icon: ListChecks },
   ]},
 ];
@@ -57,6 +57,7 @@ const submitterGroups: NavGroup[] = [
   ]},
   { label: "Hồ sơ thành tích", items: [
     { href: "/applications/new", label: "Nộp thành tích", description: "Tạo hồ sơ theo từng bước", icon: FilePlus2 },
+    { href: "/criteria", label: "Tiêu chí cá nhân C1–C9", description: "Chuẩn bị minh chứng phù hợp", icon: ListChecks },
     { href: "/applications", label: "Hồ sơ của tôi", description: "Theo dõi trạng thái xử lý", icon: Files },
   ]},
 ];
@@ -69,8 +70,8 @@ function portalTitle(role: string) {
 
 function quickSteps(role: string) {
   if (role === "admin") return [
-    { title: "Mở đợt xét", description: "Tạo đợt xét, chọn thời gian và loại hồ sơ được phép tiếp nhận." },
-    { title: "Chuẩn bị tài khoản", description: "Kiểm tra Chi đoàn, CLB và cấp tài khoản đại diện còn thiếu." },
+    { title: "Mở đợt xét", description: "Tạo đợt xét và quy định thời gian nhận hồ sơ cá nhân." },
+    { title: "Chuẩn bị tài khoản", description: "Kiểm tra Chi đoàn, sinh viên và phân quyền xét duyệt." },
     { title: "Theo dõi tiến độ", description: "Dùng Tổng quan và Toàn bộ hồ sơ để giám sát trạng thái xử lý." },
   ];
   if (role === "reviewer") return [
@@ -123,14 +124,14 @@ export function AppShell({ profile, activeBranchCount, children }: {
 
   const currentItem = groups.flatMap((g) => g.items).find((item) => isActive(item.href));
   const currentTitle = currentItem?.label || portalTitle(profile.role);
-  const currentDescription = currentItem?.description || "Hệ thống xét duyệt thành tích Khoa Công nghệ thông tin";
+  const currentDescription = currentItem?.description || "Website xét khen thưởng Đoàn – Hội Khoa Công nghệ thông tin";
 
   return (
     <div className="shell">
       <a className="skip-link" href="#main-content">Chuyển đến nội dung chính</a>
       <Sidebar groups={groups} role={profile.role} mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
       <main className="main" id="main-content">
-        <Topbar profile={profile} title={currentTitle} description={currentDescription} onMenuClick={() => setMobileOpen(true)} onHelpOpen={() => setHelpOpen(true)} />
+        <Topbar profile={profile} title={currentTitle} description={currentDescription} mobileOpen={mobileOpen} onMenuClick={() => setMobileOpen(true)} onHelpOpen={() => setHelpOpen(true)} />
         <div className="content">{children}</div>
       </main>
       <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} title={portalTitle(profile.role)} steps={quickSteps(profile.role)} />

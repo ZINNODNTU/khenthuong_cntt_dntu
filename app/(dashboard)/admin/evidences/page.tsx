@@ -24,7 +24,7 @@ export default async function EvidencesPage() {
   const { supabase } = await requireRole(["admin"]);
   const { data } = await supabase
     .from("evidences")
-    .select("*")
+    .select("id,file_name,size_bytes,category,parent_type,parent_id,created_at")
     .order("created_at", { ascending: false })
     .limit(200);
 

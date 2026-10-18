@@ -28,10 +28,16 @@ export function SupplementForm({ app }: { app: Application }) {
     setSuccess("");
     try {
       const form = new FormData(event.currentTarget);
+      const criterionValues = app.application_type === "individual" ? {
+        conductRating: String(form.get("conductRating") || "") || null,
+        cumulativeGpa: String(form.get("cumulativeGpa") || "") ? Number(form.get("cumulativeGpa")) : null,
+        disciplinaryStatus: String(form.get("disciplinaryStatus") || ""),
+        disciplinaryNote: String(form.get("disciplinaryNote") || ""),
+      } : {};
       const update = await fetch(`/api/applications/${app.id}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ achievements: form.get("achievements"), summary: form.get("summary"), resubmit: false }),
+        body: JSON.stringify({ achievements: form.get("achievements"), summary: form.get("summary"), ...criterionValues, resubmit: false }),
       });
       const updateResult = await update.json();
       if (!update.ok) throw new Error(updateResult.error || "Không thể cập nhật hồ sơ");
@@ -53,7 +59,7 @@ export function SupplementForm({ app }: { app: Application }) {
       const resubmit = await fetch(`/api/applications/${app.id}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ achievements: form.get("achievements"), summary: form.get("summary"), resubmit: true }),
+        body: JSON.stringify({ achievements: form.get("achievements"), summary: form.get("summary"), ...criterionValues, resubmit: true }),
       });
       const result = await resubmit.json();
       if (!resubmit.ok) throw new Error(result.error || "Không thể nộp lại hồ sơ");
@@ -87,8 +93,45 @@ export function SupplementForm({ app }: { app: Application }) {
           </div>
         </section>
 
+        {app.application_type === "individual" && (
+          <section className="card form-section">
+            <h3>2. Cập nhật tiêu chí C7–C9</h3>
+            <p>Cần đủ dữ liệu rèn luyện, GPA tích lũy và tình trạng kỷ luật trước khi nộp lại.</p>
+            <div className="form-grid">
+              <div className="field">
+                <label className="field-label" htmlFor="supplement-conduct">C7. Xếp loại rèn luyện</label>
+                <select className="select" id="supplement-conduct" name="conductRating"
+                  defaultValue={app.criteria?.find(c => c.code === "C7")?.value_text || ""} required>
+                  <option value="">Chọn xếp loại</option>
+                  {["Xuất sắc", "Tốt", "Khá", "Trung bình", "Yếu"].map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+              </div>
+              <div className="field">
+                <label className="field-label" htmlFor="supplement-gpa">C8. GPA tích lũy (thang 4)</label>
+                <input className="input" id="supplement-gpa" name="cumulativeGpa" type="number" min="0" max="4" step="0.01"
+                  defaultValue={app.criteria?.find(c => c.code === "C8")?.numeric_value ?? ""} required />
+              </div>
+              <div className="field">
+                <label className="field-label" htmlFor="supplement-discipline">C9. Tình trạng kỷ luật</label>
+                <select className="select" id="supplement-discipline" name="disciplinaryStatus"
+                  defaultValue={app.criteria?.find(c => c.code === "C9")?.value_text || ""} required>
+                  <option value="">Chọn tình trạng</option>
+                  <option value="none">Không bị kỷ luật từ khiển trách trở lên</option>
+                  <option value="warning">Có cảnh cáo</option>
+                  <option value="reprimand_or_higher">Có kỷ luật từ khiển trách trở lên</option>
+                </select>
+              </div>
+              <div className="field">
+                <label className="field-label" htmlFor="supplement-discipline-note">Ghi chú kỷ luật (nếu có)</label>
+                <textarea className="textarea" id="supplement-discipline-note" name="disciplinaryNote"
+                  defaultValue={app.criteria?.find(c => c.code === "C9")?.evidence_note || ""} />
+              </div>
+            </div>
+          </section>
+        )}
+
         <section className="card form-section">
-          <h3>2. Bổ sung ảnh minh chứng</h3>
+          <h3>3. Bổ sung ảnh minh chứng</h3>
           <p>Chọn đúng nội dung cần gắn ảnh.</p>
           <div className="form-grid">
             <div className="field span-2">

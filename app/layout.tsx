@@ -10,11 +10,11 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "Xét duyệt thành tích Khoa CNTT",
-    template: "%s | Xét duyệt thành tích Khoa CNTT",
+    default: "Xét khen thưởng Đoàn – Hội Khoa Công nghệ thông tin",
+    template: "%s | Xét khen thưởng Đoàn – Hội Khoa Công nghệ thông tin",
   },
   description:
-    "Hệ thống quản lý hồ sơ và xét duyệt thành tích Khoa Công nghệ thông tin",
+    "Website xét khen thưởng cá nhân Đoàn – Hội Khoa Công nghệ thông tin, Trường Đại học Công nghệ Đồng Nai",
   icons: {
     icon: "/brand/doan-logo-512.png",
     apple: "/brand/doan-logo-512.png",
@@ -26,7 +26,7 @@ function ThemeScript() {
   return (
     <script
       dangerouslySetInnerHTML={{
-        __html: `(function(){try{var t=localStorage.getItem("cntt-theme");if(!t){t=window.matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"}document.documentElement.setAttribute("data-theme",t)}catch(e){}})()`,
+        __html: `(function(){var t="light";try{var saved=localStorage.getItem("cntt-theme");if(saved==="dark"||saved==="light")t=saved}catch(e){}document.documentElement.setAttribute("data-theme",t)})()`,
       }}
     />
   );

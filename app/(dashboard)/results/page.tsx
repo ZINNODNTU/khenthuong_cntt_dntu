@@ -7,6 +7,8 @@ import { formatDate } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Pagination } from "@/components/ui/pagination";
+import { PAGE_SIZE } from "@/lib/constants";
 
 export default async function ResultsPage({
   searchParams,
@@ -14,19 +16,23 @@ export default async function ResultsPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const f = await searchParams;
+  const page = Math.min(1000, Math.max(1, Number.parseInt(f.page || "1", 10) || 1));
   const { supabase, profile } = await requireRole(["admin", "reviewer", "submitter"]);
   const isSubmitter = profile.role === "submitter";
   const periods = await getEvaluationPeriods(supabase);
   let q = supabase
     .from("applications")
-    .select("id,code,evaluation_period_id,subject_name,branch_code,status,review_comment,decided_at")
+    .select("id,code,evaluation_period_id,subject_name,branch_code,status,review_comment,decided_at", { count: "exact" })
     .in("status", ["passed", "failed", "revision"])
+    .eq("application_type", "individual")
     .order("decided_at", { ascending: false });
   if (isSubmitter) q = q.eq("created_by", profile.id);
   if (f.period) q = q.eq("evaluation_period_id", f.period);
-  const { data } = await q;
+  const { data, count, error } = await q.range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
+  if (error) throw new Error("Không thể tải kết quả xét duyệt.");
   const rows = (data || []) as Pick<Application, "id" | "code" | "evaluation_period_id" | "subject_name" | "branch_code" | "status" | "review_comment" | "decided_at">[];
   const pm = new Map(periods.map((p) => [p.id, p.name]));
+  const exportUrl = f.period ? `/api/reports/results?period=${encodeURIComponent(f.period)}` : "/api/reports/results";
 
   return (
     <>
@@ -36,9 +42,18 @@ export default async function ResultsPage({
         description={isSubmitter ? "Kết quả hồ sơ đã xử lý." : "Tổng hợp hồ sơ Đạt, Không đạt và Yêu cầu bổ sung."}
       />
 
-      <form className="filter-bar">
+      {profile.role === "admin" && (
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
+          <a className="btn btn-outline" href={exportUrl} download>
+            Xuất báo cáo kết quả CSV
+          </a>
+        </div>
+      )}
+
+      <form className="filter-bar" role="search" method="get" action="/results">
         <div className="field">
-          <select className="select" name="period" defaultValue={f.period || ""}>
+          <label className="field-label" htmlFor="result-period">Đợt xét</label>
+          <select id="result-period" className="select" name="period" defaultValue={f.period || ""}>
             <option value="">Tất cả đợt xét</option>
             {periods.map((p) => (
               <option key={p.id} value={p.id}>{p.name}</option>
@@ -132,6 +147,7 @@ export default async function ResultsPage({
           </div>
         </div>
       )}
+      <Pagination page={page} totalItems={count || 0} pageSize={PAGE_SIZE} pathname="/results" query={f} />
     </>
   );
 }

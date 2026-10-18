@@ -1,0 +1,73 @@
+/* Award review scorecard — respects existing application design tokens. */
+.scorecard { display: grid; align-content: start; gap: 18px; }
+.scorecard > .card { padding: 22px; min-width: 0; }
+.scorecard-summary { border-top: 4px solid var(--color-primary, #175cd3); }
+.scorecard-eyebrow { display: flex; align-items: center; gap: 7px; color: var(--color-primary, #175cd3); font-size: .74rem; font-weight: 800; letter-spacing: .1em; }
+.scorecard-summary h2 { margin: 9px 0 6px; line-height: 1.25; font-size: 1.3rem; }
+.scorecard-intro { margin: 0 0 16px; color: var(--text-secondary, #667085); font-size: .86rem; line-height: 1.55; }
+.scorecard-metrics { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
+.scorecard-metrics > div { background: var(--surface-muted, #f8fafc); padding: 12px 8px; text-align: center; border-radius: 10px; border: 1px solid var(--border, #e5e7eb); }
+.scorecard-metrics strong { display: block; font-size: 1.35rem; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.scorecard-metrics span { display: block; margin-top: 4px; font-size: .71rem; color: var(--text-secondary, #667085); }
+.scorecard-progress { height: 8px; border-radius: 100px; overflow: hidden; background: var(--border, #e5e7eb); margin-top: 14px; }
+.scorecard-progress span { display: block; height: 100%; background: var(--color-primary, #175cd3); transition: width .2s ease; border-radius: inherit; }
+.scorecard-warning { display: flex; align-items: flex-start; gap: 6px; margin-top: 13px; color: var(--color-danger, #b42318); font-size: .82rem; }
+.scorecard-assignment { padding-top: 14px; margin-top: 16px; border-top: 1px solid var(--border, #e5e7eb); }
+.scorecard-assignment p { display: flex; align-items: flex-start; gap: 8px; font-size: .84rem; line-height: 1.5; margin: 0 0 12px; }
+.scorecard-assignment p svg { flex-shrink: 0; }
+.scorecard-assignment-actions, .scorecard-criterion-actions, .scorecard-decision-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+.scorecard-criteria { padding: 0 !important; overflow: hidden; }
+.scorecard-section-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; gap: 12px; border-bottom: 1px solid var(--border, #e5e7eb); }
+.scorecard-section-head h3 { margin: 0; font-size: 1rem; }
+.scorecard-section-head span { font-size: .75rem; color: var(--text-secondary, #667085); white-space: nowrap; }
+.scorecard-criterion { padding: 18px 20px; border-bottom: 1px solid var(--border, #e5e7eb); }
+.scorecard-criterion:last-child { border-bottom: 0; }
+.scorecard-criterion--rejected { box-shadow: inset 3px 0 var(--color-danger, #b42318); }
+.scorecard-criterion--verified { box-shadow: inset 3px 0 var(--color-success, #079455); }
+.scorecard-criterion-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 9px; }
+.scorecard-code { font-size: .76rem; font-weight: 800; color: var(--color-primary, #175cd3); }
+.scorecard-status { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--border, #e5e7eb); border-radius: 100px; padding: 3px 9px; font-size: .72rem; font-weight: 600; }
+.scorecard-status--verified { color: #027a48; background: #ecfdf3; border-color: #a9e8c5; }
+.scorecard-status--rejected { color: #b42318; background: #fef3f2; border-color: #fecdca; }
+.scorecard-status--not_applicable { color: #475467; background: #f2f4f7; }
+.scorecard-criterion h4 { margin: 0 0 10px; font-size: .91rem; line-height: 1.45; }
+.scorecard-required { display: inline-block; color: #92400e; background: #fff7ed; border-radius: 6px; padding: 4px 7px; font-size: .71rem; margin: -3px 0 10px; }
+.scorecard-declared { padding: 10px 12px; border: 1px solid var(--border, #e5e7eb); border-radius: 9px; background: var(--surface-muted, #f8fafc); margin-bottom: 14px; overflow-wrap: anywhere; }
+.scorecard-declared small { font-size: .69rem; color: var(--text-secondary, #667085); text-transform: uppercase; font-weight: 700; letter-spacing: .03em; }
+.scorecard-declared p { margin: 4px 0 0; font-size: .83rem; line-height: 1.5; white-space: pre-wrap; }
+.scorecard-declared .scorecard-evidence { margin-top: 8px; color: var(--text-secondary, #667085); }
+.scorecard-note { width: 100%; margin: 6px 0 9px; resize: vertical; min-height: 68px; }
+.scorecard-verified-at { font-size: .73rem; color: var(--text-secondary, #667085); margin: 0 0 9px; }
+.scorecard-criterion-actions button { min-height: 32px; font-size: .74rem; }
+.scorecard-decision { padding: 0 20px 21px !important; }
+.scorecard-decision .scorecard-section-head { padding-left: 0; padding-right: 0; margin-bottom: 16px; }
+.scorecard-checklist { border-radius: 9px; background: var(--surface-muted, #f8fafc); border: 1px solid var(--border, #e5e7eb); margin-bottom: 17px; padding: 12px; font-size: .8rem; line-height: 1.45; }
+.scorecard-checklist b { display: block; margin-bottom: 6px; }
+.scorecard-checklist p { margin: 5px 0; color: var(--text-secondary, #667085); }
+.scorecard-success { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 17px; background: #ecfdf3; padding: 12px; border: 1px solid #a9e8c5; color: #027a48; border-radius: 8px; font-size: .8rem; }
+.scorecard-success svg { flex-shrink: 0; }
+.scorecard-decision-actions button { flex: 1 1 125px; }
+.scorecard-footer { color: var(--text-secondary, #667085); font-size: .73rem; line-height: 1.5; margin: 15px 0 0; }
+@media(max-width: 680px) { .scorecard > .card { padding: 16px; } .scorecard-criterion { padding: 16px; } .scorecard-section-head { padding: 16px; } .scorecard-decision { padding: 0 16px 16px !important; } }
+
+/* Manual, auditable numeric scoring panel for C1–C6. */
+.scorecard-score-summary { display:grid; gap:4px; margin-top:14px; padding:14px; border-radius:10px; background:var(--surface-muted, #f8fafc); border:1px solid var(--border,#e5e7eb); }
+.scorecard-score-summary strong { font-size:1.25rem; color:var(--color-primary,#175cd3); font-variant-numeric:tabular-nums; }
+.scorecard-score-summary span { font-size:.85rem; font-weight:600; }
+.scorecard-score-summary small { font-size:.73rem; color:var(--text-secondary,#667085); }
+.scorecard-points { margin:12px 0 16px; padding:14px; border:1px dashed var(--border,#cbd5e1); border-radius:10px; background:var(--surface-muted,#f8fafc); }
+.scorecard-points-heading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; margin-bottom:11px; font-size:.82rem; }
+.scorecard-points-heading span { color:var(--text-secondary,#667085); }
+.scorecard-points .field { margin-bottom:10px; }
+.scorecard-points .input, .scorecard-points .textarea { width:100%; }
+@media(max-width:680px){ .scorecard-points{padding:11px} }
+
+@media(prefers-reduced-motion: reduce) { .scorecard-progress span { transition: none; } }
+
+/* Evidence-based review guidance for the official nine-criterion framework. */
+.scorecard-criterion-guide { margin: 10px 0 13px; padding: 10px 12px; border: 1px solid var(--border, #d9e1ed); background: var(--surface-muted, #f8fafc); border-radius: 9px; color: var(--text-secondary, #536078); font-size: .78rem; line-height: 1.65; }
+.scorecard-criterion-guide summary { cursor: pointer; color: var(--color-primary, #175cd3); font-weight: 750; }
+.scorecard-criterion-guide summary:focus-visible { outline: 2px solid var(--color-primary, #175cd3); outline-offset: 3px; }
+.scorecard-criterion-guide strong { display: block; color: var(--color-text, #18283f); margin: 10px 0 4px; }
+.scorecard-criterion-guide ul { margin: 3px 0 8px; padding-left: 18px; list-style: disc; }
+.scorecard-criterion-guide li { margin-bottom: 4px; }

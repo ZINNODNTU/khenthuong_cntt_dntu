@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, ChevronRight, HelpCircle, LogOut, Menu, Moon, Search, Sun, X } from "lucide-react";
+import { ChevronRight, HelpCircle, LogOut, Menu, Moon, Search, Sun, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { Profile, UserRole } from "@/lib/types";
 
@@ -29,9 +29,9 @@ async function signOut() {
 }
 
 export function Topbar({
-  profile, title, description, onMenuClick, onHelpOpen,
+  profile, title, description, mobileOpen, onMenuClick, onHelpOpen,
 }: {
-  profile: Profile; title: string; description: string; onMenuClick: () => void; onHelpOpen: () => void;
+  profile: Profile; title: string; description: string; mobileOpen: boolean; onMenuClick: () => void; onHelpOpen: () => void;
 }) {
   const [dark, setDark] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -43,7 +43,7 @@ export function Topbar({
   useEffect(() => {
     try {
       const t = window.localStorage.getItem("cntt-theme");
-      setDark(t === "dark" || (!t && window.matchMedia("(prefers-color-scheme:dark)").matches));
+      setDark(t === "dark");
     } catch { /* noop */ }
   }, []);
 
@@ -78,13 +78,13 @@ export function Topbar({
   function handleSearch(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const q = new FormData(e.currentTarget).get("q") as string;
-    if (q?.trim()) window.location.href = `/admin/search?q=${encodeURIComponent(q.trim())}`;
+    if (q?.trim() && profile.role !== "reviewer") window.location.href = `/applications?search=${encodeURIComponent(q.trim())}`;
   }
 
   return (
     <header className="topbar">
       <div className="topbar-left">
-        <button type="button" className="topbar-menu-btn" aria-label="Mở menu" aria-expanded={false} onClick={onMenuClick}>
+        <button type="button" className="topbar-menu-btn" aria-label="Mở menu" aria-expanded={mobileOpen} onClick={onMenuClick}>
           <Menu size={20} />
         </button>
         <div className="topbar-info">
@@ -100,7 +100,7 @@ export function Topbar({
 
       <div className="topbar-right">
         {/* Global search — togglable, only on desktop */}
-        <div className={`topbar-search-wrap ${searchOpen ? "is-open" : ""}`}>
+        {profile.role !== "reviewer" && <div className={`topbar-search-wrap ${searchOpen ? "is-open" : ""}`}>
           {searchOpen && (
             <form className="topbar-search-form" onSubmit={handleSearch} role="search">
               <Search size={14} className="topbar-search-icon" />
@@ -115,11 +115,8 @@ export function Topbar({
           )}
         </div>
 
+        }
         <div className="topbar-actions topbar-desktop-only" aria-label="Công cụ nhanh">
-          <button type="button" className="btn btn-ghost btn-icon topbar-notif-btn" aria-label="Thông báo" title="Thông báo">
-            <Bell size={18} />
-            <span className="topbar-notif-dot" aria-hidden="true" />
-          </button>
           <button type="button" className="btn btn-ghost btn-icon" aria-label={dark ? "Giao diện sáng" : "Giao diện tối"} title={dark ? "Chế độ sáng" : "Chế độ tối"} onClick={toggleTheme}>
             {dark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
@@ -146,23 +143,23 @@ export function Topbar({
         </button>
 
         {userMenuOpen && (
-          <div ref={dropdownRef} className="topbar-user-dropdown" role="menu">
+          <div ref={dropdownRef} className="topbar-user-dropdown" role="group" aria-label="Tùy chọn tài khoản">
             <div className="topbar-dropdown-header">
               <div className="topbar-dropdown-name">{profile.full_name || "Hệ thống"}</div>
               <div className="topbar-dropdown-email">{profile.email}</div>
               <div className="topbar-dropdown-role">{roleLabel(profile.role)}</div>
             </div>
             <div className="topbar-dropdown-divider" />
-            <button type="button" className="topbar-dropdown-item" role="menuitem" onClick={toggleTheme}>
+            <button type="button" className="topbar-dropdown-item" onClick={toggleTheme}>
               {dark ? <Sun size={16} /> : <Moon size={16} />}
               <span>{dark ? "Giao diện sáng" : "Giao diện tối"}</span>
             </button>
-            <button type="button" className="topbar-dropdown-item" role="menuitem" onClick={onHelpOpen}>
+            <button type="button" className="topbar-dropdown-item" onClick={onHelpOpen}>
               <HelpCircle size={16} />
               <span>Hướng dẫn</span>
             </button>
             <div className="topbar-dropdown-divider" />
-            <button type="button" className="topbar-dropdown-item topbar-dropdown-item-danger" role="menuitem" onClick={signOut}>
+            <button type="button" className="topbar-dropdown-item topbar-dropdown-item-danger" onClick={signOut}>
               <LogOut size={16} />
               <span>Đăng xuất</span>
             </button>

@@ -38,6 +38,10 @@ function walk(directory) {
 const required = [
   "supabase/database/00_RESET_DATABASE.sql",
   "supabase/database/01_SETUP_DATABASE.sql",
+  "supabase/migrations/20261008140001_initial_award_schema.sql",
+  "supabase/migrations/20261008140002_criteria_nine.sql",
+  "supabase/migrations/20261008140003_review_workflow.sql",
+  "supabase/migrations/20261008140004_award_scoring.sql",
   "supabase/functions/bootstrap-admin/index.ts",
   "CREATE_INITIAL_ADMIN.ps1",
   "CREATE_INITIAL_ADMIN.bat",
@@ -54,7 +58,7 @@ for (const file of required) {
 }
 
 const forbidden = [
-  "supabase/migrations",
+
   "supabase/functions/create-system-user",
   "CREATE_USER_SUPABASE_CLI.ps1",
   "CREATE_REVIEWER_SUPABASE_CLI.bat",
@@ -203,8 +207,11 @@ for (const [label, source] of [
   ["branch", branchRoute],
   ["club", clubRoute],
 ]) {
-  if (!source.includes("provisionUnitAccount")) {
-    fail(`${label} creation does not provision an account.`);
+  if (source.includes("provisionUnitAccount") || source.includes("setUnitAccountActive")) {
+    fail(`${label} route still creates or manipulates collective submitter accounts.`);
+  }
+  if (!source.includes("status: 410")) {
+    fail(`${label} route must disable legacy collective account provisioning.`);
   }
 }
 
@@ -213,11 +220,11 @@ const loginForm = readFileSync(
   "utf8",
 );
 
-if (!loginForm.includes("minLength={6}")) {
-  fail("Login form does not accept the default 123456 password.");
+if (!loginForm.includes('name="password"')) {
+  fail("Login form lacks the password control.");
 }
 
-console.log("MSSV/unit-account verification: PASS");
+console.log("MSSV/individual-only unit-directory verification: PASS");
 
 
 const identitySource = readFileSync(
@@ -226,7 +233,7 @@ const identitySource = readFileSync(
 );
 
 for (const token of [
-  'DEFAULT_UNIT_PASSWORD = "123456"',
+
   "studentIdFromDntuEmail",
   "loginEmailFromInput",
 ]) {
@@ -235,17 +242,21 @@ for (const token of [
   }
 }
 
+if (identitySource.includes("DEFAULT_UNIT_PASSWORD")) {
+  fail("Insecure legacy fixed unit password remains in identity helper.");
+}
+
 const registerForm = readFileSync(
   resolve(root, "components/register-form.tsx"),
   "utf8",
 );
 
-if (!registerForm.includes('name="studentId"')) {
-  fail("Registration does not collect MSSV directly.");
+if (!registerForm.includes('name="email"') || !registerForm.includes('MSSV@dntu.edu.vn')) {
+  fail("Registration must collect an eligible student email.");
 }
 
-if (registerForm.includes('name="email"')) {
-  fail("Registration still asks students to type the full email.");
+if (!['name="fullName"', 'name="branchCode"', 'name="birthDate"', 'name="phone"', 'name="password"', 'name="confirmPassword"'].every((field) => registerForm.includes(field))) {
+  fail("Registration does not collect all mandatory student profile fields.");
 }
 
 if (!loginForm.includes("loginEmailFromInput")) {
@@ -269,3 +280,4 @@ for (const apiFile of [
 }
 
 console.log("Forced-password/API verification: PASS");
+process.exitCode = failed ? 1 : 0;

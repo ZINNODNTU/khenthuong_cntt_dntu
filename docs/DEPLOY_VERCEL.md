@@ -11,7 +11,7 @@ NEXT_PUBLIC_SUPABASE_URL=https://PROJECT.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxx
 SUPABASE_SERVICE_ROLE_KEY=sb_secret_xxx
 
-NEXT_PUBLIC_PUBLIC_SIGNUP_ENABLED=true
+PUBLIC_SIGNUP_ENABLED=false # Chỉ bật khi đã xác minh được quyền sở hữu MSSV và có chống lạm dụng
 NEXT_PUBLIC_AUTH_EMAIL_SENDER_ADDRESS=email-xac-nhan@your-domain.example
 ALLOWED_REVIEWER_DOMAIN=dntu.edu.vn
 

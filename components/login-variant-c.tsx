@@ -63,7 +63,7 @@ export function LoginVariantC({ signupEnabled }: { signupEnabled: boolean }) {
           <div className="varC-card-content">
             <div className="varC-badge">
               <Sparkles size={12} />
-              <span>Hệ thống xét duyệt thành tích</span>
+              <span>Xét khen thưởng Đoàn – Hội</span>
             </div>
 
             <div className="varC-header">

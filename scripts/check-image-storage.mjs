@@ -1,86 +1,83 @@
 import { readFileSync, existsSync } from "node:fs";
-import { resolve } from "node:path";
 
+/**
+ * Operator-only, read-only connectivity diagnostic.
+ * Never print the shared secret, URL deployment ID, private Drive folder ID,
+ * raw HTML (which may contain login identifiers) or full remote exceptions.
+ */
 function loadEnvFile(fileName) {
-  const filePath = resolve(process.cwd(), fileName);
-  if (!existsSync(filePath)) return;
-  const text = readFileSync(filePath, "utf8");
-  for (const line of text.split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const index = trimmed.indexOf("=");
+  if (!existsSync(fileName)) return;
+  for (const original of readFileSync(fileName, "utf8").split(/\r?\n/)) {
+    const line = original.trim();
+    if (!line || line.startsWith("#")) continue;
+    const index = line.indexOf("=");
     if (index < 1) continue;
-    const key = trimmed.slice(0, index).trim();
-    let value = trimmed.slice(index + 1).trim();
-    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
-      value = value.slice(1, -1);
-    }
-    if (!process.env[key]) process.env[key] = value;
+    const name = line.slice(0, index).trim();
+    let value = line.slice(index + 1).trim();
+    if ((value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))) value = value.slice(1, -1);
+    if (!process.env[name]) process.env[name] = value;
   }
+}
+
+function requiredConfig() {
+  const rawUrl = String(process.env.GOOGLE_APPS_SCRIPT_WEB_APP_URL || "").trim();
+  const secret = String(process.env.GOOGLE_APPS_SCRIPT_SHARED_SECRET || "").trim();
+  if (!rawUrl) throw new Error("Missing GOOGLE_APPS_SCRIPT_WEB_APP_URL");
+  if (secret.length < 24) throw new Error("GOOGLE_APPS_SCRIPT_SHARED_SECRET must be at least 24 characters");
+  let url;
+  try { url = new URL(rawUrl); } catch { throw new Error("Google Apps Script deployment URL is invalid"); }
+  const normalizedPath = url.pathname.replace(/\/+$/, "");
+  if (url.protocol !== "https:" || url.hostname !== "script.google.com" ||
+      !(/^\/macros\/s\/[^/]+\/exec$/.test(normalizedPath) ||
+        /^\/a\/macros\/[^/]+\/s\/[^/]+\/exec$/.test(normalizedPath))) {
+    throw new Error("Google Apps Script URL must be a script.google.com /exec deployment");
+  }
+  url.search = "";
+  url.hash = "";
+  return { url: url.toString(), secret };
 }
 
 async function main() {
   loadEnvFile(".env.local");
   loadEnvFile(".env");
-
-  const rawUrl = (process.env.GOOGLE_APPS_SCRIPT_WEB_APP_URL || "").trim();
-  const secret = (process.env.GOOGLE_APPS_SCRIPT_SHARED_SECRET || "").trim();
-  if (!rawUrl) throw new Error("Missing GOOGLE_APPS_SCRIPT_WEB_APP_URL in .env.local");
-  if (!secret) throw new Error("Missing GOOGLE_APPS_SCRIPT_SHARED_SECRET in .env.local");
-
-  const url = new URL(rawUrl);
-  const normalizedPath = url.pathname.replace(/\/+$/, "");
-  const publicPattern = /^\/macros\/s\/[^/]+\/exec$/;
-  const workspacePattern = /^\/a\/macros\/[^/]+\/s\/[^/]+\/exec$/;
-  if (url.hostname !== "script.google.com" || (!publicPattern.test(normalizedPath) && !workspacePattern.test(normalizedPath))) {
-    throw new Error("The URL must end with /exec and match /macros/s/... or /a/macros/domain/s/...");
-  }
-
-  url.pathname = normalizedPath;
-  url.search = "";
-  url.hash = "";
-
-  console.log("Image storage diagnostic");
-  console.log("Endpoint:", url.toString());
-  console.log("Secret length:", secret.length);
-  console.log("Sending health request...");
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json; charset=UTF-8",
-      accept: "application/json",
-    },
-    body: JSON.stringify({ action: "health", secret }),
-    redirect: "follow",
-  });
-
-  const raw = await response.text();
-  console.log("HTTP status:", response.status);
-  console.log("Content-Type:", response.headers.get("content-type") || "(none)");
-
-  if (raw.trimStart().startsWith("<")) {
-    throw new Error(
-      `The deployment returned HTML instead of JSON. It may require Google sign-in, be outdated, or use the wrong deployment. Response: ${raw.replace(/\s+/g, " ").slice(0, 240)}`,
-    );
-  }
-
-  let parsed;
+  const { url, secret } = requiredConfig();
+  console.log("Checking Google Apps Script health (endpoint and secrets redacted)");
+  let response;
   try {
-    parsed = JSON.parse(raw);
-  } catch {
-    throw new Error(`Invalid JSON response: ${raw.slice(0, 240)}`);
+    response = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json; charset=UTF-8", accept: "application/json" },
+      body: JSON.stringify({ action: "health", secret }),
+      cache: "no-store",
+      redirect: "follow",
+      signal: AbortSignal.timeout(20000),
+    });
+  } catch (error) {
+    const timedOut = error instanceof Error && ["TimeoutError", "AbortError"].includes(error.name);
+    throw new Error(timedOut ? "Gateway timed out after 20 seconds" : "Cannot connect to Apps Script gateway");
   }
-
-  if (!response.ok || !parsed.ok) {
-    throw new Error(`${parsed.code || "STORAGE_ERROR"}: ${parsed.error || raw}`);
+  const type = response.headers.get("content-type") || "";
+  if (!type.includes("application/json")) {
+    throw new Error("Gateway returned HTML or a non-JSON response; check Web App deployment/access settings");
   }
-
-  console.log("SUCCESS");
-  console.log(JSON.stringify(parsed.data, null, 2));
+  const body = await response.text();
+  let parsed;
+  try { parsed = JSON.parse(body); }
+  catch { throw new Error("Gateway response was not valid JSON"); }
+  if (!response.ok || !parsed?.ok) {
+    const code = typeof parsed?.code === "string" && /^[A-Z0-9_]{5,70}$/.test(parsed.code)
+      ? parsed.code : "STORAGE_GATEWAY_ERROR";
+    throw new Error("Gateway rejected health request: " + code);
+  }
+  if (!parsed.data || typeof parsed.data.version !== "string" ||
+      !parsed.data.version.startsWith("2.")) {
+    throw new Error("Gateway requires Apps Script v2.x; redeploy Code.gs and create a new Web App version");
+  }
+  console.log("PASS: Apps Script gateway v" + parsed.data.version + " responds with server-only credentials");
 }
 
-main().catch((error) => {
-  console.error("FAILED:", error instanceof Error ? error.message : error);
+main().catch(error => {
+  console.error("FAIL:", error instanceof Error ? error.message : "Unknown health error");
   process.exitCode = 1;
 });

@@ -1,4 +1,12 @@
 project_id = "cntt-award-review-system"
 
+[auth]
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000/auth/finish"]
+
+[auth.email]
+enable_confirmations = true
+
+
 [functions.bootstrap-admin]
 verify_jwt = false

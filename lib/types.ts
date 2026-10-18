@@ -13,6 +13,9 @@ export type Profile = {
     club_id: string | null;
     is_active: boolean;
     must_change_password: boolean;
+    phone?: string | null;
+    birth_date?: string | null;
+    profile_completed_at?: string | null;
 };
 export type Branch = {
     code: string;
@@ -42,17 +45,24 @@ export type EvaluationPeriod = {
     created_at?: string;
     updated_at?: string;
 };
+export type EvidenceEntry = {
+    id: string;
+    application_id: string;
+    criterion_code: CriterionCode;
+    title: string;
+    description: string;
+    created_at: string;
+};
 export type Evidence = {
     id: string;
     file_name: string;
     mime_type: string;
     size_bytes: number;
     category: string;
+    evidence_entry_id?: string | null;
     parent_type: string;
     parent_id: string;
     created_at: string;
-    public_token: string;
-    public_view_enabled: boolean;
 };
 export type Activity = {
     id: string;
@@ -76,6 +86,12 @@ export type PriorAward = {
     issuer: string;
     evidences?: Evidence[];
 };
+export type AcademicRecord = { gpa: number; scale: 4; cumulative: boolean; evidence_id?: string | null };
+export type ConductRecord = { rating: string; academic_year: string; evidence_id?: string | null };
+export type DisciplinaryRecord = { has_discipline: boolean; discipline_level: string | null; description: string | null; evidence_id?: string | null };
+export type LeadershipRole = { id?: string; organization: string; position: string; start_date: string | null; end_date: string | null; responsibility: string | null; result: string | null; evidence_id?: string | null };
+export type Initiative = { id?: string; title: string; description: string; scope: string | null; impact: string | null; evidence_id?: string | null };
+
 export type Application = {
     id: string;
     code: string;
@@ -109,6 +125,8 @@ export type Application = {
     activities?: Activity[];
     prior_awards?: PriorAward[];
     evidences?: Evidence[];
+    evidence_entries?: EvidenceEntry[];
+    criteria?: ApplicationCriterion[];
 };
 export type UnitAccountSummary = {
     id: string;
@@ -119,5 +137,29 @@ export type UnitAccountSummary = {
     club_id: string | null;
     is_active: boolean;
     must_change_password: boolean;
+    phone?: string | null;
+    birth_date?: string | null;
+    profile_completed_at?: string | null;
 };
 
+
+export type CriterionCode = "C1" | "C2" | "C3" | "C4" | "C5" | "C6" | "C7" | "C8" | "C9" | "T1" | "T2" | "T3" | "T4" | "T5" | "T6";
+export type CriterionStatus = "pending" | "verified" | "rejected" | "not_applicable";
+export type ApplicationCriterion = {
+    id: string;
+    application_id: string;
+    code: CriterionCode;
+    title: string;
+    status: CriterionStatus;
+    value_text: string | null;
+    numeric_value: number | null;
+    boolean_value: boolean | null;
+    evidence_note: string | null;
+    reviewer_note: string | null;
+    verified_by: string | null;
+    verified_at: string | null;
+    /** Values only available in an immutable finalized scoring snapshot. */
+    points_awarded?: number | null;
+    points_possible?: number | null;
+    score_note?: string | null;
+};

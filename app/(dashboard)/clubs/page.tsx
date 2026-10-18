@@ -1,27 +1,19 @@
 import { ClubManager } from "@/components/club-manager";
 import { requireRole } from "@/lib/auth";
 import { getClubs } from "@/lib/clubs";
-import type { UnitAccountSummary } from "@/lib/types";
 import { PageHeader } from "@/components/ui/page-header";
 
 export default async function ClubsPage() {
   const { supabase } = await requireRole(["admin"]);
-  const [clubs, { data: accounts }] = await Promise.all([
-    getClubs(supabase, { includeInactive: true }),
-    supabase
-      .from("profiles")
-      .select("id,email,full_name,submission_scope,branch_code,club_id,is_active,must_change_password")
-      .eq("role", "submitter")
-      .eq("submission_scope", "club"),
-  ]);
+  const clubs = await getClubs(supabase, { includeInactive: true });
   return (
     <>
       <PageHeader
-        eyebrow="DANH MỤC TẬP THỂ"
+        eyebrow="DANH MỤC THAM CHIẾU"
         title="Quản lý câu lạc bộ"
-        description="Thêm CLB, tự cấp tài khoản đại diện và quản lý quyền nộp hồ sơ tập thể."
+        description="Dùng để đối chiếu vai trò cá nhân tại C5, không cấp tài khoản hoặc tiếp nhận hồ sơ khen thưởng tập thể."
       />
-      <ClubManager clubs={clubs} accounts={(accounts || []) as UnitAccountSummary[]} />
+      <ClubManager clubs={clubs} />
     </>
   );
 }

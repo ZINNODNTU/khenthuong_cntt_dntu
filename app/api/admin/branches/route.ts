@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { createBranchSchema, provisionBranchAccountSchema, updateBranchSchema, } from "@/lib/validation";
+import { createBranchSchema, updateBranchSchema } from "@/lib/validation";
 import { writeAudit } from "@/lib/audit";
-import { provisionUnitAccount, provisionUnitAccounts, setUnitAccountActive, } from "@/lib/unit-accounts";
 async function requireAdmin() {
     const supabase = await createClient();
     const { data: { user }, } = await supabase.auth.getUser();
@@ -55,83 +53,14 @@ export async function POST(request: Request) {
                 : "Không thể thêm chi đoàn",
         }, { status: 400 });
     }
-    try {
-        const account = await provisionUnitAccount({
-            code,
-            fullName: `Chi đoàn ${name}`,
-            scope: "branch",
-            branchCode: code,
-        });
-        await writeAudit(auth.supabase, auth.user.id, "branch.create_with_account", "branch", null, {
-            code,
-            accountEmail: account.email,
-        });
-        return NextResponse.json({ branch, account }, { status: 201 });
-    }
-    catch (accountError) {
-        const admin = createAdminClient();
-        await admin.from("branches").delete().eq("code", code);
-        return NextResponse.json({
-            error: accountError instanceof Error
-                ? `Không thể cấp tài khoản Chi đoàn: ${accountError.message}`
-                : "Không thể cấp tài khoản Chi đoàn",
-        }, { status: 400 });
-    }
+    await writeAudit(auth.supabase, auth.user.id, "branch.create", "branch", null, { code });
+    return NextResponse.json({ branch }, { status: 201 });
 }
-export async function PUT(request: Request) {
+// Historical collective account provisioning is intentionally disabled.
+export async function PUT(_request: Request) {
     const auth = await requireAdmin();
-    if ("error" in auth)
-        return auth.error;
-    const parsed = provisionBranchAccountSchema.safeParse(await request.json());
-    if (!parsed.success) {
-        return NextResponse.json({ error: parsed.error.issues[0]?.message }, { status: 400 });
-    }
-    let query = auth.supabase
-        .from("branches")
-        .select("code,name,is_active")
-        .eq("is_active", true)
-        .order("code");
-    if (!parsed.data.allMissing && parsed.data.code) {
-        query = query.eq("code", parsed.data.code.toUpperCase());
-    }
-    const { data: branches, error } = await query;
-    if (error) {
-        return NextResponse.json({ error: "Không thể tải danh sách chi đoàn" }, { status: 400 });
-    }
-    let targets = branches || [];
-    if (parsed.data.allMissing && targets.length) {
-        const { data: existingAccounts } = await auth.supabase
-            .from("profiles")
-            .select("branch_code")
-            .eq("role", "submitter")
-            .eq("submission_scope", "branch")
-            .in("branch_code", targets.map((branch) => branch.code));
-        const existingCodes = new Set((existingAccounts || [])
-            .map((account) => account.branch_code)
-            .filter(Boolean));
-        targets = targets.filter((branch) => !existingCodes.has(branch.code));
-    }
-    let accounts;
-    try {
-        accounts = await provisionUnitAccounts(targets.map((branch) => ({
-            code: branch.code,
-            fullName: `Chi đoàn ${branch.name}`,
-            scope: "branch" as const,
-            branchCode: branch.code,
-        })));
-    }
-    catch (accountError) {
-        return NextResponse.json({
-            error: accountError instanceof Error
-                ? accountError.message
-                : "Không thể cấp tài khoản Chi đoàn",
-        }, { status: 400 });
-    }
-    await writeAudit(auth.supabase, auth.user.id, "branch.provision_accounts", "branch", null, {
-        count: accounts.length,
-        codes: targets.map((branch) => branch.code),
-    });
-    return NextResponse.json({ accounts });
+    if ("error" in auth) return auth.error;
+    return NextResponse.json({ error: "Hệ thống chỉ cấp tài khoản xét khen thưởng cá nhân." }, { status: 410 });
 }
 export async function PATCH(request: Request) {
     const auth = await requireAdmin();
@@ -153,18 +82,6 @@ export async function PATCH(request: Request) {
         .single();
     if (error || !branch) {
         return NextResponse.json({ error: "Không thể cập nhật chi đoàn" }, { status: 400 });
-    }
-    try {
-        await setUnitAccountActive({
-            scope: "branch",
-            branchCode: code,
-            isActive: parsed.data.isActive,
-        });
-    }
-    catch {
-        return NextResponse.json({
-            error: "Chi đoàn đã cập nhật nhưng không thể đồng bộ trạng thái tài khoản.",
-        }, { status: 500 });
     }
     await writeAudit(auth.supabase, auth.user.id, "branch.update", "branch", null, {
         code,

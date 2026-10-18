@@ -17,7 +17,7 @@ export function LoginVariantA() {
             <svg width="44" height="44" viewBox="0 0 44 44" fill="none"><rect width="44" height="44" rx="12" fill="#2563EB"/><text x="22" y="28" textAnchor="middle" fill="white" fontSize="22" fontWeight="700">V</text></svg>
           </div>
           <h1 className="varA-title">CNTT DNTU</h1>
-          <p className="varA-subtitle">Hệ thống xét duyệt thành tích</p>
+          <p className="varA-subtitle">Xét khen thưởng Đoàn – Hội Khoa CNTT</p>
 
           <div className="varA-features">
             <div className="varA-feature">

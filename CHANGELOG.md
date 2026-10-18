@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.0 — Xét khen thưởng cá nhân Đoàn – Hội Khoa CNTT (18/10/2026)
+
+- Chuyển nhận diện website sang Xét khen thưởng Đoàn – Hội Khoa Công nghệ thông tin.
+- Chỉ nhận hồ sơ cá nhân C1–C9, không còn quy trình nộp/xét tập thể mới.
+- Cụ thể hóa minh chứng; C1–C6 nhiều mục và nhiều tệp, C7–C9 đúng một tệp mỗi tiêu chí.
+- Giữ hồ sơ tập thể lịch sử; danh mục Chi đoàn/CLB còn phục vụ đối chiếu thông tin cá nhân.
+- Chặn API cấp tài khoản tập thể; migration 20261018190000_individual_award_only.sql sẵn sàng áp dụng an toàn.
+- Đạt 67/67 unit tests, production build và kiểm thử Playwright local.
+- Cần chạy migration và kiểm tra biến môi trường server-only tại Supabase/Vercel trước khi go-live.
+
 ## 1.0.0 — Duplicate Student Account Fix
 
 - Chuyển đăng ký sinh viên sang API server.

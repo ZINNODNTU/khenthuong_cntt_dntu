@@ -2,8 +2,16 @@ node_modules
 .next
 .env
 .env.local
+supabase/.temp/
 .vercel
 *.log
 .DS_Store
 ui-audit-results/artifacts/
 ui-audit-results/report/
+.ai-bridge/
+test-results/
+ui-audit-results/performance/
+tsconfig.tsbuildinfo
+*.dpapi
+*.pem
+*.key

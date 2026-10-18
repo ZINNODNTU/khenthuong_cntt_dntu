@@ -13,9 +13,8 @@ import { Pagination } from "@/components/ui/pagination";
 import { FilePlus2, Search } from "lucide-react";
 import { DeleteApplicationButton } from "@/components/delete-application-button";
 
-function typeLabel(a: Pick<Application, "application_type" | "collective_type">) {
-  if (a.application_type === "individual") return "Cá nhân";
-  return a.collective_type === "club" ? "Tập thể CLB" : "Tập thể Chi đoàn";
+function typeLabel(_a: Pick<Application, "application_type" | "collective_type">) {
+  return "Cá nhân";
 }
 
 export default async function ApplicationsPage({
@@ -40,6 +39,7 @@ export default async function ApplicationsPage({
   let q = supabase
     .from("applications")
     .select("id,code,evaluation_period_id,subject_name,branch_code,club_id,application_type,collective_type,status,updated_at,evidences(count)", { count: "exact" })
+    .eq("application_type", "individual")
     .order("updated_at", { ascending: false })
     .range(requestedOffset, requestedOffset + limit - 1);
 
@@ -47,11 +47,6 @@ export default async function ApplicationsPage({
   if (admin && f.branch) q = q.eq("branch_code", f.branch);
   if (f.period) q = q.eq("evaluation_period_id", f.period);
   if (f.status) q = q.eq("status", f.status);
-  if (admin && f.type) {
-    if (f.type === "individual") q = q.eq("application_type", "individual");
-    if (f.type === "branch") q = q.eq("collective_type", "branch");
-    if (f.type === "club") q = q.eq("collective_type", "club");
-  }
   if (f.search) {
     const s = f.search.replace(/[%_,]/g, "");
     q = q.or(`subject_name.ilike.%${s}%,code.ilike.%${s}%`);
@@ -78,7 +73,7 @@ export default async function ApplicationsPage({
     <>
       <PageHeader
         eyebrow={admin ? "QUẢN LÝ HỒ SƠ" : "TÀI KHOẢN CỦA TÔI"}
-        title={admin ? "Toàn bộ hồ sơ" : "Hồ sơ của tôi"}
+        title={admin ? "Hồ sơ khen thưởng cá nhân" : "Hồ sơ của tôi"}
         description={admin ? "Tra cứu hồ sơ theo đợt xét, đơn vị và trạng thái." : "Theo dõi hồ sơ đã lưu, đã gửi và kết quả xét duyệt."}
       >
         {!admin && (
@@ -128,16 +123,6 @@ export default async function ApplicationsPage({
             ))}
           </select>
         </div>
-        {admin && (
-          <div className="field">
-            <select className="select" name="type" defaultValue={f.type || ""}>
-              <option value="">Tất cả loại hồ sơ</option>
-              <option value="individual">Cá nhân</option>
-              <option value="branch">Tập thể Chi đoàn</option>
-              <option value="club">Tập thể CLB</option>
-            </select>
-          </div>
-        )}
         <div className="filter-bar-actions">
           <Button type="submit">
             <Search size={16} />

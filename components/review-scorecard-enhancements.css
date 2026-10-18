@@ -1,0 +1,12 @@
+
+/* Compact state filters in the reviewer's nine-criterion assessment panel. */
+.scorecard-filter-tabs{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:11px 15px;border-bottom:1px solid var(--color-border,#e0e9ec)}
+.scorecard-filter-tabs button{min-height:39px;border:1px solid transparent;border-radius:9px;background:transparent;color:var(--color-text-secondary,#65798a);font-size:11px;font-weight:800;padding:9px;display:inline-flex;align-items:center;gap:5px;cursor:pointer}
+.scorecard-filter-tabs button:hover{background:var(--color-muted,#f5f8f9)}
+.scorecard-filter-tabs button.is-active{background:var(--color-muted,#e4f5f1);border-color:#82ccba;color:var(--color-primary,#167c75)}
+.scorecard-filter-tabs span{display:inline-grid;place-items:center;min-width:20px;height:20px;border-radius:6px;background:var(--color-surface,#fff);padding:0 5px;font-variant-numeric:tabular-nums}
+.scorecard-filter-tabs button:focus-visible,.scorecard-preview-button:focus-visible{outline:3px solid #4db7a4;outline-offset:2px}
+.scorecard-filter-empty{padding:26px 20px;text-align:center;color:var(--color-text-secondary,#607789);font-size:12px}
+@media(max-width:460px){.scorecard-filter-tabs button{min-height:44px}.scorecard-criterion-actions button{min-height:44px}.scorecard-filter-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.scorecard-filter-tabs button{justify-content:center}.scorecard-criterion-actions button{flex:1 1 120px}}
+
+.scorecard-preview-button{border:1px solid var(--color-border,#d7e5e7);border-radius:7px;padding:6px 9px;background:var(--color-muted,#f0f7f7);color:var(--color-primary,#147c83);font-size:11px;font-weight:800;cursor:pointer;margin-right:8px}.scorecard-preview-button:hover{border-color:#64bbaa}.scorecard-criterion ul{padding-left:0;list-style:none}.scorecard-criterion ul li{display:flex;align-items:center;flex-wrap:wrap;gap:7px;min-width:0;overflow-wrap:anywhere}.scorecard-criterion a{color:var(--color-primary,#147c83);font-size:11px}.scorecard{min-width:0}.scorecard .card{border-radius:15px}.scorecard-criterion-actions button{min-height:39px}.scorecard-decision-actions button{min-height:43px}@media(max-width:680px){.scorecard-decision-actions{display:grid;grid-template-columns:1fr}.scorecard-decision-actions button{width:100%}}

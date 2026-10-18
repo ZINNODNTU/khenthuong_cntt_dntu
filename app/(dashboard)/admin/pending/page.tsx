@@ -18,6 +18,7 @@ export default async function PendingPage() {
     .from("applications")
     .select("id, code, subject_name, status, updated_at")
     .in("status", ["submitted", "review", "revision"])
+    .eq("application_type", "individual")
     .order("updated_at", { ascending: true })
     .limit(50);
 

@@ -1,6 +1,6 @@
 {
   "name": "cntt-award-review-system",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -12,8 +12,11 @@
     "generate-storage-secret": "node scripts/generate-storage-secret.mjs",
     "verify": "node scripts/verify-clean-release.mjs",
     "storage:check": "node scripts/check-image-storage.mjs",
+    "storage:smoke": "node scripts/smoke-apps-script-storage.mjs",
+    "supabase:check": "node scripts/check-supabase-connection.mjs",
+    "supabase:sql": "node scripts/build-supabase-install.mjs",
     "db:verify": "node scripts/verify-database-files.mjs",
-    "check": "pnpm run verify && pnpm run db:verify && pnpm run ui:self-check && pnpm run ui:verify && pnpm run typecheck",
+    "check": "pnpm run verify && pnpm run db:verify && pnpm run ui:self-check && pnpm run ui:verify && pnpm run auth:verify && pnpm run auth:uniqueness:verify && pnpm run typecheck && pnpm run criteria:test",
     "ui:self-check": "node scripts/ui-self-check.mjs",
     "ui:verify": "node scripts/verify-modern-ui.mjs",
     "auth:verify": "node scripts/verify-login-smtp.mjs",
@@ -21,7 +24,8 @@
     "auth:duplicates:audit": "node scripts/audit-duplicate-student-accounts.mjs",
     "ui:audit": "playwright test tests/ui-audit.spec.ts",
     "ui:audit:headed": "playwright test tests/ui-audit.spec.ts --headed",
-    "ui:motion-audit": "playwright test tests/motion-audit.spec.ts"
+    "ui:motion-audit": "playwright test tests/motion-audit.spec.ts",
+    "criteria:test": "node --experimental-strip-types --test tests/criteria-rules.test.mjs tests/criterion-evidence.test.mjs tests/report-csv.test.mjs tests/award-scoring.test.mjs tests/award-criteria.test.mjs tests/period-dates.test.mjs tests/security-hardening.test.mjs tests/upload-retry.test.mjs tests/evidence-entry-ledger.test.mjs tests/collective-award-criteria.test.mjs tests/collective-criteria-migration.test.mjs tests/apps-script-gateway.test.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.3",
@@ -30,7 +34,7 @@
     "date-fns": "4.1.0",
     "framer-motion": "12.42.2",
     "lucide-react": "1.25.0",
-    "next": "16.2.10",
+    "next": "16.3.8",
     "react": "19.2.7",
     "react-dom": "19.2.7",
     "recharts": "3.10.1",

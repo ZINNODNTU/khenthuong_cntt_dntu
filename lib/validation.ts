@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { validDateOnly } from "@/lib/period-dates";
 const branchCodeSchema = z
     .string()
     .trim()
@@ -49,7 +50,7 @@ export const applicationSchema = z
     .object({
     status: z.enum(["draft", "submitted"]),
     evaluationPeriodId: z.string().uuid("Đợt xét không hợp lệ."),
-    applicationType: z.enum(["individual", "collective"]),
+    applicationType: z.literal("individual", { error: "Chỉ tiếp nhận hồ sơ khen thưởng cá nhân." }),
     collectiveType: z
         .enum(["branch", "club"])
         .nullable()
@@ -67,6 +68,10 @@ export const applicationSchema = z
     initiatives: z.string().max(5000).optional().default(""),
     impact: z.string().max(5000).optional().default(""),
     summary: z.string().max(8000).optional().default(""),
+    conductRating: z.enum(["Xuất sắc","Tốt","Khá","Trung bình","Yếu"]).nullable().optional().default(null),
+    cumulativeGpa: z.number().min(0).max(4).nullable().optional().default(null),
+    disciplinaryStatus: z.enum(["none","warning","reprimand_or_higher"]).default("none"),
+    disciplinaryNote: z.string().max(3000).optional().default(""),
     activities: z.array(activitySchema).max(100),
     priorAwards: z.array(awardSchema).max(100),
 })
@@ -86,32 +91,6 @@ export const applicationSchema = z
                 message: "Thông tin loại hồ sơ không hợp lệ.",
             });
         }
-    }
-    if (value.applicationType === "collective" &&
-        value.collectiveType === "branch" &&
-        !value.branchCode) {
-        ctx.addIssue({
-            code: "custom",
-            path: ["branchCode"],
-            message: "Hồ sơ tập thể chi đoàn phải có mã chi đoàn.",
-        });
-    }
-    if (value.applicationType === "collective" &&
-        value.collectiveType === "club" &&
-        !value.clubId) {
-        ctx.addIssue({
-            code: "custom",
-            path: ["clubId"],
-            message: "Hồ sơ tập thể CLB phải có CLB.",
-        });
-    }
-    if (value.applicationType === "collective" &&
-        !value.collectiveType) {
-        ctx.addIssue({
-            code: "custom",
-            path: ["collectiveType"],
-            message: "Hãy chọn tập thể Chi đoàn hoặc CLB.",
-        });
     }
     if (value.status === "submitted" &&
         !value.achievements.trim()) {
@@ -231,18 +210,18 @@ export const provisionClubAccountSchema = z.object({
     id: z.string().uuid().optional(),
     allMissing: z.boolean().optional().default(false),
 });
-const dateOnlySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Ngày minh chứng không hợp lệ.");
+const dateOnlySchema = z.string().refine(validDateOnly, "Ngày minh chứng không hợp lệ.");
 const periodSchemaBase = z.object({
     name: z.string().trim().min(3).max(200),
     description: z.string().trim().max(1000).optional().default(""),
-    startsAt: z.string().datetime(),
-    endsAt: z.string().datetime(),
+    startsAt: z.string().datetime({ offset: true }).transform((value) => new Date(value).toISOString()),
+    endsAt: z.string().datetime({ offset: true }).transform((value) => new Date(value).toISOString()),
     evidenceStartsOn: dateOnlySchema,
     evidenceEndsOn: dateOnlySchema,
     status: z.enum(["draft", "open", "closed"]),
     allowIndividual: z.boolean().default(true),
-    allowBranchCollective: z.boolean().default(true),
-    allowClubCollective: z.boolean().default(true),
+    allowBranchCollective: z.boolean().default(false),
+    allowClubCollective: z.boolean().default(false),
 });
 const validPeriodTime = (value: { startsAt: string; endsAt: string }) => new Date(value.endsAt) > new Date(value.startsAt);
 const validEvidenceTime = (value: { evidenceStartsOn: string; evidenceEndsOn: string }) => value.evidenceEndsOn >= value.evidenceStartsOn;

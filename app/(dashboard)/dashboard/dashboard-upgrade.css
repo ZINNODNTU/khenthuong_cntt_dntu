@@ -1,0 +1,32 @@
+
+.monitor-scope-filter{display:flex;align-items:center;gap:11px;flex-wrap:wrap;background:var(--color-surface,#fff);border:1px solid var(--color-border,#dce6eb);border-radius:13px;padding:13px 16px;margin:8px 0 13px}
+.monitor-scope-filter label{font-size:12px;font-weight:800;color:var(--color-text,#273d50);white-space:nowrap}
+.monitor-scope-filter .select{min-height:41px;min-width:200px;max-width:420px;flex:1 1 220px}
+.monitor-scope-filter button{min-height:41px;white-space:nowrap}
+.monitor-scope-filter :is(button,select):focus-visible{outline:3px solid #41b39f;outline-offset:2px}
+@media(max-width:540px){.monitor-scope-filter{padding:13px}.monitor-scope-filter label{flex:1 1 100%}.monitor-scope-filter .select{flex:1 1 190px;min-width:0}.monitor-scope-filter button{flex:0 0 auto}}
+
+.monitor-focus{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:18px;background:linear-gradient(115deg,#0f2f4d,#175d6e 72%,#14847f);border-radius:18px;padding:24px 27px;color:#fff;margin:16px 0 20px;box-shadow:0 12px 30px rgba(17,54,78,.1)}.monitor-focus-copy{display:flex;flex-direction:column;gap:7px;max-width:580px}.monitor-focus-kicker{display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:.15em;font-weight:850;color:#a6f0dc}.monitor-focus-copy h2{font-size:clamp(18px,2.3vw,26px);letter-spacing:-.035em;margin:0;line-height:1.35;color:#fff}.monitor-focus-copy p{font-size:12px;color:#d8eaf0;margin:0;line-height:1.7}.monitor-focus-actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px}.monitor-focus-actions a{display:inline-flex;align-items:center;gap:8px;border-radius:10px;padding:12px 15px;min-height:43px;font-size:12px;font-weight:850;text-decoration:none;background:#a4efd6;color:#0d454e}.monitor-focus-actions a+a{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.2)}.monitor-focus-actions a:hover{filter:brightness(1.08)}.monitor-more{border:1px solid var(--color-border,#dbe5eb);border-radius:15px;background:var(--color-surface,#fff);margin:-4px 0 20px;overflow:hidden}.monitor-more>summary{cursor:pointer;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px;font-size:12px;font-weight:800;color:var(--color-text,#27445b);list-style:none}.monitor-more>summary::-webkit-details-marker{display:none}.monitor-more>summary>svg{transition:transform .15s}.monitor-more[open]>summary>svg{transform:rotate(180deg)}.monitor-more>.monitor-kpi-grid{padding:0 15px 15px;margin:0}.monitor-more>summary:focus-visible{outline:3px solid #389e9a;outline-offset:-4px}@media(max-width:670px){.monitor-focus{padding:20px;border-radius:15px}.monitor-focus-actions{width:100%}.monitor-focus-actions a{justify-content:center;flex:1 1 160px}.monitor-more>.monitor-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:450px){.monitor-more>.monitor-kpi-grid{grid-template-columns:1fr}}@media(prefers-reduced-motion:reduce){.monitor-more>summary>svg{transition:none}}
+
+/* 2026 institutional refinement — practical summary instead of promotional banner. */
+.monitor-scope-filter { border-radius:6px; box-shadow:none; padding:14px 18px; }
+.monitor-scope-filter label { font-weight:700; }
+.monitor-scope-filter :is(button,select):focus-visible { outline-color:#205471; }
+.monitor-focus {
+  background:#173c53;
+  border:1px solid #264b5d;
+  border-left:4px solid #a54836;
+  border-radius:7px;
+  box-shadow:none;
+  padding:24px 28px;
+}
+.monitor-focus-kicker { color:#e3b19d; font-size:10px; font-weight:740; letter-spacing:.11em; }
+.monitor-focus-copy h2 { font-weight:710; }
+.monitor-focus-copy p { color:#c8d8de; }
+.monitor-focus-actions a { background:#f5f5f2; color:#173c53; border-radius:5px; font-weight:700; }
+.monitor-focus-actions a+a { background:transparent; border-color:#718c9c; }
+.monitor-focus-actions a:hover { filter:none; background:#fff; }
+.monitor-focus-actions a+a:hover { background:rgba(255,255,255,.08); }
+.monitor-more { border-radius:7px; box-shadow:none; }
+.monitor-more>summary { font-weight:720; }
+.monitor-more>summary:focus-visible { outline-color:#205471; }

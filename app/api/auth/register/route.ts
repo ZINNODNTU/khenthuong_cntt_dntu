@@ -1,236 +1,87 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { env } from "@/lib/env";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { publicStudentRegistrationSchema } from "@/lib/validation";
+import { studentRegistrationSchema } from "@/lib/student-onboarding";
+import { enforceRateLimit, requestClientAddress } from "@/lib/security-rate-limit";
 
 export const dynamic = "force-dynamic";
 
-const DUPLICATE_MESSAGE =
-  "MSSV này đã có tài khoản. Vui lòng đăng nhập hoặc liên hệ quản trị viên nếu bạn quên mật khẩu.";
-
-function json(
-  body: Record<string, unknown>,
-  status = 200,
-) {
-  return NextResponse.json(body, {
-    status,
-    headers: {
-      "Cache-Control": "no-store",
-    },
-  });
-}
-
-function normalizedAuthError(message: string) {
-  const normalized = message.toLowerCase();
-
-  if (
-    normalized.includes("already registered") ||
-    normalized.includes("already exists") ||
-    normalized.includes("duplicate")
-  ) {
-    return {
-      status: 409,
-      message: DUPLICATE_MESSAGE,
-      keepReservation: true,
-    };
-  }
-
-  if (
-    normalized.includes("email rate limit") ||
-    normalized.includes("rate limit")
-  ) {
-    return {
-      status: 429,
-      message:
-        "Hệ thống đang tạm giới hạn gửi email xác nhận. Vui lòng thử lại sau.",
-      keepReservation: false,
-    };
-  }
-
-  return {
-    status: 400,
-    message: message || "Không thể tạo tài khoản.",
-    keepReservation: false,
-  };
+function respond(body: Record<string, unknown>, status = 200) {
+  return NextResponse.json(body, { status, headers: { "Cache-Control": "no-store" } });
 }
 
 export async function POST(request: Request) {
   if (!env.publicSignupEnabled()) {
-    return json({ error: "Đăng ký tài khoản hiện đang tạm đóng." }, 403);
+    return respond({ error: "Hệ thống hiện chưa mở đăng ký tự phục vụ." }, 403);
   }
-  let body: unknown;
-
+  const ipLimit = await enforceRateLimit("register:ip", requestClientAddress(request), 12, 3600);
+  if (!ipLimit.allowed) return ipLimit.response;
+  let value: unknown;
   try {
-    body = await request.json();
+    value = await request.json();
   } catch {
-    return json({ error: "Dữ liệu đăng ký không hợp lệ." }, 400);
+    return respond({ error: "Dữ liệu gửi lên không hợp lệ." }, 400);
   }
-
-  const parsed = publicStudentRegistrationSchema.safeParse(body);
-
+  const parsed = studentRegistrationSchema.safeParse(value);
   if (!parsed.success) {
-    return json(
-      {
-        error:
-          parsed.error.issues[0]?.message ||
-          "Dữ liệu đăng ký không hợp lệ.",
-      },
-      400,
-    );
+    return respond({ error: parsed.error.issues[0]?.message || "Dữ liệu đăng ký không hợp lệ." }, 400);
   }
-
   const payload = parsed.data;
-  const studentId = payload.studentId.trim();
-  const email = `${studentId}@dntu.edu.vn`;
-  const branchCode = payload.branchCode.trim().toUpperCase();
-  const admin = createAdminClient();
+  const emailLimit = await enforceRateLimit("register:email", payload.email, 3, 3600);
+  if (!emailLimit.allowed) return emailLimit.response;
 
-  const { data: branch, error: branchError } = await admin
-    .from("branches")
+  // Only public Supabase auth is used: never a service role / privileged key
+  // in self-registration. The PostgreSQL trigger validates branch membership,
+  // student-email format and ensures uniqueness atomically.
+  const auth = createSupabaseClient(env.supabaseUrl(), env.supabasePublishableKey(), {
+    auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
+  });
+
+  const { data: branch, error: branchError } = await auth.from("branches")
     .select("code")
-    .eq("code", branchCode)
+    .eq("code", payload.branchCode)
     .eq("is_active", true)
     .maybeSingle();
-
-  if (branchError) {
-    return json(
-      { error: "Không thể kiểm tra thông tin Chi đoàn." },
-      500,
-    );
+  if (branchError || !branch) {
+    return respond({ error: "Chi đoàn không tồn tại hoặc đã ngừng sử dụng." }, 400);
   }
 
-  if (!branch) {
-    return json(
-      { error: "Chi đoàn không tồn tại hoặc đã ngừng sử dụng." },
-      400,
-    );
-  }
-
-  const { data: existingProfile } = await admin
-    .from("profiles")
-    .select("id")
-    .eq("email", email)
-    .maybeSingle();
-
-  if (existingProfile) {
-    return json({ error: DUPLICATE_MESSAGE }, 409);
-  }
-
-  // Remove only an abandoned reservation. A real or completed account is
-  // never removed here.
-  const staleBefore = new Date(
-    Date.now() - 15 * 60 * 1000,
-  ).toISOString();
-
-  await admin
-    .from("student_account_registry")
-    .delete()
-    .eq("student_id", studentId)
-    .eq("status", "pending")
-    .is("auth_user_id", null)
-    .lt("created_at", staleBefore);
-
-  const { error: reserveError } = await admin
-    .from("student_account_registry")
-    .insert({
-      student_id: studentId,
-      email,
-      status: "pending",
-    });
-
-  if (reserveError) {
-    if (reserveError.code === "23505") {
-      return json({ error: DUPLICATE_MESSAGE }, 409);
-    }
-
-    return json(
-      { error: "Không thể khóa MSSV để đăng ký tài khoản." },
-      500,
-    );
-  }
-
-  const publicAuth = createSupabaseClient(
-    env.supabaseUrl(),
-    env.supabasePublishableKey(),
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-        detectSessionInUrl: false,
-      },
-    },
-  );
-
-  const confirmationUrl = new URL(
-    "/auth/confirm?next=/",
-    env.appUrl(),
-  ).toString();
-
-  const { data, error } = await publicAuth.auth.signUp({
-    email,
+  const confirmationUrl = new URL("/auth/finish", env.appUrl()).toString();
+  const { data, error } = await auth.auth.signUp({
+    email: payload.email,
     password: payload.password,
     options: {
       emailRedirectTo: confirmationUrl,
       data: {
-        full_name: payload.fullName.trim(),
-        branch_code: branchCode,
+        full_name: payload.fullName,
+        branch_code: payload.branchCode,
+        phone: payload.phone,
+        birth_date: payload.birthDate,
         account_type: "student",
-        student_id: studentId,
       },
     },
   });
 
-  const isObfuscatedExistingUser =
-    Boolean(data.user) &&
-    Array.isArray(data.user?.identities) &&
-    data.user.identities.length === 0;
-
-  if (error || isObfuscatedExistingUser || !data.user) {
-    const mapped = normalizedAuthError(
-      isObfuscatedExistingUser
-        ? "User already registered"
-        : error?.message || "Không thể tạo tài khoản.",
-    );
-
-    if (mapped.keepReservation) {
-      await admin
-        .from("student_account_registry")
-        .update({
-          status: "existing",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("student_id", studentId);
-    } else {
-      await admin
-        .from("student_account_registry")
-        .delete()
-        .eq("student_id", studentId)
-        .eq("status", "pending")
-        .is("auth_user_id", null);
+  const duplicate = data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0;
+  if (error || !data.user || duplicate) {
+    const msg = error?.message?.toLowerCase() || "";
+    if (duplicate || /already|duplicate|exists/i.test(msg)) {
+      return respond({ error: "Email này đã có tài khoản. Hãy đăng nhập hoặc liên hệ quản trị." }, 409);
     }
-
-    return json({ error: mapped.message }, mapped.status);
+    if (/rate limit|too many|over_email_send_rate_limit/i.test(msg)) {
+      return respond({ error: "Dịch vụ email đang giới hạn tần suất gửi. Vui lòng thử lại sau." }, 429);
+    }
+    if (/branch|chi đoàn|inactive|student_account/i.test(msg)) {
+      return respond({ error: "Email sinh viên hoặc Chi đoàn không hợp lệ, hoặc đã có tài khoản." }, 400);
+    }
+    return respond({ error: "Không tạo được tài khoản. Hãy kiểm tra thông tin và thử lại." }, 400);
   }
 
-  await admin
-    .from("student_account_registry")
-    .update({
-      auth_user_id: data.user.id,
-      status: data.user.email_confirmed_at
-        ? "confirmed"
-        : "created",
-      updated_at: new Date().toISOString(),
-    })
-    .eq("student_id", studentId)
-    .or(`auth_user_id.is.null,auth_user_id.eq.${data.user.id}`);
-
-  return json(
-    {
-      ok: true,
-      requiresConfirmation: !data.user.email_confirmed_at,
-      email,
-    },
-    201,
-  );
+  // Fail closed in case an administrator accidentally disables email confirmation.
+  if (data.user.email_confirmed_at || data.session) {
+    return respond({
+      error: "Supabase đang tắt xác nhận email. Quản trị viên phải bật Confirm email trước khi mở đăng ký.",
+    }, 503);
+  }
+  return respond({ ok: true, requiresConfirmation: true, email: payload.email }, 201);
 }

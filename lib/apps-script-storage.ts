@@ -1,7 +1,10 @@
 import { env } from "@/lib/env";
-const REQUEST_TIMEOUT_MS = 45000;
+import { createHash } from "node:crypto";
+// One bounded attempt per API invocation. Client retries are idempotent via Drive key.
+// A 60-second Vercel function must not perform three 45-second attempts.
+const REQUEST_TIMEOUT_MS = 38000;
 const RESPONSE_PREVIEW_LIMIT = 240;
-const RETRYABLE_CODES = new Set(["STORAGE_TIMEOUT", "STORAGE_NETWORK_ERROR"]);
+
 type StorageResponse<T> = {
     ok: boolean;
     data?: T;
@@ -20,6 +23,7 @@ export type DownloadedFile = {
     mimeType: string;
     fileName: string;
     size: number;
+    sha256?: string;
 };
 export type StorageHealth = {
     rootFolderId: string;
@@ -91,6 +95,18 @@ function htmlResponseError(raw: string, status: number) {
     return new StorageGatewayError("Kho ảnh trả về một trang HTML thay vì dữ liệu API. Thường do URL triển khai sai, bản triển khai chưa cập nhật hoặc quyền truy cập chưa để công khai.", { code: "STORAGE_HTML_RESPONSE", status, responsePreview: preview(raw) });
 }
 function mapGatewayError(message: string, code?: string, status?: number) {
+    // Apps Script intentionally returns a generic public error text. Interpret
+    // the stable machine code rather than trying to match translated messages.
+    const known: Record<string, string> = {
+        STORAGE_SECRET_MISMATCH: "Kho lưu trữ chưa khớp mã bí mật với máy chủ. Quản trị viên cần kiểm tra cấu hình.",
+        STORAGE_ROOT_NOT_CONFIGURED: "Google Drive chưa cấu hình thư mục minh chứng.",
+        STORAGE_PERMISSION_DENIED: "Tài khoản Google chưa có quyền truy cập tệp hoặc thư mục minh chứng.",
+        STORAGE_FILE_TOO_LARGE: "Minh chứng vượt quá giới hạn 4 MiB.",
+        STORAGE_INVALID_FILE: "Định dạng hoặc nội dung minh chứng không hợp lệ.",
+        STORAGE_INVALID_REQUEST: "Yêu cầu gửi tới kho lưu trữ không hợp lệ hoặc Apps Script chưa đúng phiên bản.",
+        STORAGE_FILE_NOT_FOUND: "Không tìm thấy tệp minh chứng trên Google Drive.",
+    };
+    if (code && known[code]) return new StorageGatewayError(known[code], { code, status });
     const normalized = message.toLowerCase();
     if (normalized.includes("shared secret") || normalized.includes("storage_shared_secret")) {
         return new StorageGatewayError("Mã kết nối giữa website và kho ảnh không khớp. Hãy dùng đúng giá trị STORAGE_SHARED_SECRET trong cấu hình vận hành.", { code: code || "STORAGE_SECRET_MISMATCH", status });
@@ -146,6 +162,10 @@ async function callStorage<T>(payload: Record<string, unknown>): Promise<T> {
         throw new StorageGatewayError("Kho ảnh phản hồi sai định dạng. Hãy cập nhật Code.gs và tạo phiên bản triển khai mới.", { code: "STORAGE_INVALID_JSON", status: response.status, responsePreview: preview(raw) });
     }
     if (!response.ok || !parsed.ok) {
+        if (parsed.code === "STORAGE_BUSY")
+            throw new StorageGatewayError("Kho lưu trữ đang bận, vui lòng thử lại.", { code: "STORAGE_BUSY", status: 503 });
+        if (parsed.code === "STORAGE_CONTENT_MISMATCH")
+            throw new StorageGatewayError("Tệp tải lên không khớp yêu cầu trước đó. Hãy chọn lại tệp.", { code: "STORAGE_CONTENT_MISMATCH", status: 409 });
         throw mapGatewayError(parsed.error || `Kho ảnh trả về lỗi ${response.status}.`, parsed.code, response.status);
     }
     if (parsed.data === undefined || parsed.data === null) {
@@ -164,42 +184,32 @@ export async function uploadEvidence(params: {
     buffer: Buffer;
     uploadKey: string;
 }) {
-    let lastError: unknown;
-    for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-            return await callStorage<StoredFile>({
-                action: "upload",
-                applicationCode: params.applicationCode,
-                category: params.category,
-                fileName: params.fileName,
-                mimeType: params.mimeType,
-                base64: params.buffer.toString("base64"),
-                uploadKey: params.uploadKey,
-            });
-        }
-        catch (error) {
-            lastError = error;
-            if (!(error instanceof StorageGatewayError) || !RETRYABLE_CODES.has(error.code) || attempt === 2)
-                throw error;
-            await new Promise((resolve) => setTimeout(resolve, 500 * 2 ** attempt + Math.random() * 500));
-        }
+    // One bounded gateway attempt. The browser retries transient failures with
+    // the same uploadKey; Apps Script guarantees that retries reuse one Drive file.
+    const uploaded = await callStorage<StoredFile>({
+        action: "upload",
+        applicationCode: params.applicationCode,
+        category: params.category,
+        fileName: params.fileName,
+        mimeType: params.mimeType,
+        base64: params.buffer.toString("base64"),
+        sha256: createHash("sha256").update(params.buffer).digest("hex"),
+        uploadKey: params.uploadKey,
+    });
+    if (!/^[A-Za-z0-9_-]{10,200}$/.test(uploaded.id) ||
+        uploaded.mimeType !== params.mimeType || uploaded.size !== params.buffer.length) {
+        throw new StorageGatewayError("Kho lưu trữ trả về thông tin tệp không hợp lệ.", {
+            code: "STORAGE_RESPONSE_MISMATCH",
+        });
     }
-    throw lastError;
+    return uploaded;
 }
 export async function downloadEvidence(fileId: string) {
     return callStorage<DownloadedFile>({ action: "download", fileId });
 }
 export async function deleteEvidence(fileId: string) {
-    try {
-        await callStorage<{
-            deleted: boolean;
-        }>({ action: "delete", fileId });
-    }
-    catch {
-        // Best-effort cleanup. The original error remains the source of truth.
-    }
+    await callStorage<{ deleted: boolean }>({ action: "delete", fileId });
 }
 export async function checkStorageHealth() {
     return callStorage<StorageHealth>({ action: "health" });
 }
-

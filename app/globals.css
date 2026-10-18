@@ -4505,3 +4505,106 @@ img, video, svg {
 
 
 
+
+/* CNTT DNTU / institutional visual refinement — 2026-10-18
+   Flat paper surfaces, clear hierarchy and understated navigation.
+   Avoid animated elevation, decorative gradients and generic SaaS styling. */
+:root {
+  --primary-50: #edf4f7;
+  --primary-100: #d8e8ef;
+  --primary-500: #346984;
+  --primary-600: #205471;
+  --primary-700: #193f58;
+  --primary-800: #13334b;
+  --primary-900: #102c40;
+  --color-canvas: #f4f6f7;
+  --color-surface-subtle: #eef2f4;
+  --color-interactive: #205471;
+  --color-interactive-hover: #173e58;
+  --color-accent: #9b5542;
+  --color-accent-soft: #f6ece6;
+  --color-cta: #9b5542;
+  --color-cta-hover: #874433;
+  --radius-sm: 5px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
+  --shadow-xs: 0 1px 2px rgba(18,41,56,.035);
+  --shadow-sm: 0 1px 3px rgba(18,41,56,.045);
+  --shadow-md: 0 9px 24px rgba(18,41,56,.07);
+  --shadow-lg: 0 15px 35px rgba(18,41,56,.095);
+  --sidebar-width: 258px;
+  --content-max-width: 1320px;
+}
+[data-theme="dark"] {
+  --color-canvas: #101c27;
+  --color-surface: #172733;
+  --color-surface-raised: #1b2e3b;
+  --color-surface-subtle: #223543;
+  --color-border: #334b59;
+  --color-border-strong: #506c7c;
+  --color-interactive: #89b9d4;
+  --color-interactive-hover: #c1ddea;
+  --color-accent: #e0a590;
+  --color-accent-soft: #47342f;
+}
+.sidebar { box-shadow: none; }
+.sidebar-header {
+  min-height: 76px;
+  padding-inline: 17px;
+  border-bottom: 1px solid var(--color-border);
+}
+.sidebar-brand-text strong { letter-spacing: .015em; font-weight: 760; }
+.sidebar-brand-text span { letter-spacing: .015em; }
+.sidebar-nav { padding: 17px 10px; }
+.sidebar-section { margin-top: 16px; }
+.sidebar-label {
+  color: var(--color-text-muted);
+  font-weight: 690;
+  font-size: 10px;
+  letter-spacing: .115em;
+  padding: 7px 12px;
+}
+.sidebar-menu { gap: 1px; }
+.sidebar-link {
+  border-radius: 5px;
+  min-height: 41px;
+  padding-inline: 12px;
+  font-weight: 530;
+  font-size: 12px;
+}
+.sidebar-link-icon { width: 22px; height: 22px; }
+.sidebar-link:hover .sidebar-link-icon { transform: none; }
+.sidebar-link.active {
+  background: var(--color-surface-subtle);
+  color: var(--color-interactive);
+  box-shadow: inset 3px 0 0 #9b5542;
+  font-weight: 730;
+}
+.topbar {
+  min-height: 72px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.topbar::after { display: none; }
+.topbar-title { font-weight: 730; font-size: 15px; letter-spacing: -.02em; }
+.topbar-description { font-size: 11px; }
+.topbar-breadcrumb { font-size: 11px; }
+.topbar-role-badge { border-radius: 4px; }
+.content { padding: clamp(20px, 2.75vw, 35px); }
+.page-header h1 { font-weight: 720; letter-spacing: -.033em; }
+.page-header-eyebrow { color: var(--color-accent); font-size: 10px; font-weight: 760; letter-spacing: .11em; }
+.btn { box-shadow: none; border-radius: 5px; font-weight: 630; }
+.btn:active { transform: none; }
+.btn-primary { background: #205471; border-color: #205471; color: #fff; }
+.btn-primary:hover { background: #173e58; border-color: #173e58; color: #fff; }
+.btn-primary:active, .btn-primary:hover:active { background: #173e58; }
+.card { box-shadow: none; border-radius: 8px; }
+.card-hover:hover { transform: none; box-shadow: var(--shadow-sm); border-color: var(--color-border-strong); }
+.card-border-accent { border-top: 2px solid var(--color-accent); }
+[data-theme="dark"] .btn-primary { background: #356d8d; color: #fff; border-color: #356d8d; }
+[data-theme="dark"] .btn-primary:hover { background: #4d82a0; border-color: #4d82a0; }
+@media (pointer: coarse) { .sidebar-link { padding: 12px; } }

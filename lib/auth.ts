@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile, UserRole } from "@/lib/types";
+import { studentProfileComplete } from "@/lib/student-onboarding";
 export function roleHome(role: UserRole): string {
     if (role === "admin")
         return "/dashboard";
@@ -16,7 +17,7 @@ export async function requireUser() {
     }
     const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("id,email,full_name,role,submission_scope,branch_code,club_id,is_active,must_change_password")
+        .select("id,email,full_name,role,submission_scope,branch_code,club_id,is_active,must_change_password,phone,birth_date,profile_completed_at")
         .eq("id", user.id)
         .maybeSingle();
     if (profileError) {
@@ -30,6 +31,10 @@ export async function requireUser() {
     }
     if (profile.must_change_password) {
         redirect("/change-password");
+    }
+    if (profile.role === "submitter" && profile.submission_scope === "individual") {
+        if (!user.email_confirmed_at) redirect("/login?error=session");
+        if (!studentProfileComplete(profile)) redirect("/complete-profile");
     }
     return { user, profile: profile as Profile, supabase };
 }

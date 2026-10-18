@@ -1,0 +1,148 @@
+.page{display:flex;flex-direction:column;gap:23px;min-width:0;padding-bottom:30px}
+.welcome{position:relative;display:grid;grid-template-columns:minmax(0,1.4fr) minmax(240px,.72fr);align-items:stretch;gap:24px;border-radius:22px;padding:clamp(26px,3.5vw,43px);background:linear-gradient(122deg,#102c4d 0%,#174f6d 60%,#107d78 100%);color:#fff;overflow:hidden;box-shadow:0 17px 38px rgba(19,55,80,.12)}
+.welcome:before{content:"";position:absolute;width:600px;height:600px;right:-320px;top:-420px;border:1px solid rgba(255,255,255,.13);border-radius:50%;pointer-events:none}
+.welcome>div{position:relative;z-index:1}
+.eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:10px;letter-spacing:.13em;color:#a1f4db;font-weight:850}
+.welcome h1{font-size:clamp(29px,3.5vw,45px);line-height:1.14;letter-spacing:-.045em;margin:19px 0 16px;max-width:650px;font-weight:850}
+.welcome h1 span{color:#9aefcf}.welcome>div>p{line-height:1.8;font-size:14px;color:#d0e5ee;max-width:490px;margin:0}
+.welcomeActions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:28px}
+.primaryCta,.secondaryCta{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:46px;padding:11px 18px;text-decoration:none;border-radius:11px;font-size:12px;font-weight:800;transition:transform .18s,background .18s}
+.primaryCta{background:#9aefd3;color:#083a43}.primaryCta:hover{background:#bcf9e5;transform:translateY(-1px)}
+.secondaryCta{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.19);color:#fff}.secondaryCta:hover{background:rgba(255,255,255,.18)}
+.heroCard{align-self:stretch;display:flex;flex-direction:column;justify-content:center;border-radius:17px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.1);padding:23px;backdrop-filter:blur(11px)}
+.heroCardIcon{display:grid;place-items:center;width:47px;height:47px;border-radius:14px;background:rgba(152,243,216,.16);color:#a0eed6;margin-bottom:18px}
+.heroCardTag{font-size:10px;letter-spacing:.13em;color:#b7e8df;font-weight:850;margin-bottom:8px}.heroCard strong{font-size:18px;line-height:1.4;letter-spacing:-.02em}
+.heroCard p{font-size:12px;line-height:1.7;color:#d5e8ed;margin:12px 0 17px}
+.heroCardFooter{display:flex;align-items:center;gap:8px;border-top:1px solid rgba(255,255,255,.16);padding-top:16px;font-size:11px;font-weight:700;color:#b7f4df}
+.overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}
+.overviewCard{display:flex;gap:13px;align-items:flex-start;background:var(--color-surface,#fff);border:1px solid var(--color-border,#dce5eb);border-radius:15px;padding:21px;min-width:0;position:relative}
+.overviewIcon{display:grid;place-items:center;flex-shrink:0;width:43px;height:43px;border-radius:12px;background:var(--color-muted,#e9f5f5);color:#16798a}
+.overviewCard>div:nth-child(2){display:flex;flex-direction:column;gap:6px;min-width:0;padding-right:5px}
+.overviewCard span:not(.liveBadge):not(.quietBadge){font-size:11px;color:var(--color-text-secondary,#718091);font-weight:700}
+.overviewCard strong{font-size:17px;color:var(--color-text,#1d3547);line-height:1.3;letter-spacing:-.025em}
+.overviewCard small{color:var(--color-text-secondary,#61798a);font-size:11px;line-height:1.5;overflow-wrap:anywhere}
+.liveBadge,.quietBadge{position:absolute;right:13px;top:12px;font-size:9px;border-radius:99px;padding:5px 8px;font-weight:800}.liveBadge{background:#def8e8;color:#167855}.quietBadge{background:var(--color-muted,#eef2f4);color:var(--color-text-secondary,#657786)}
+.contentGrid{display:grid;grid-template-columns:minmax(0,1.16fr) minmax(0,.84fr);gap:17px}
+.panel{display:flex;flex-direction:column;background:var(--color-surface,#fff);border:1px solid var(--color-border,#dce5eb);border-radius:17px;padding:clamp(18px,2.6vw,27px);min-width:0}
+.panelHead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:20px}.panelEyebrow{color:var(--color-primary,#177889);font-size:10px;font-weight:850;letter-spacing:.13em}
+.panelHead h2{font-size:19px;letter-spacing:-.025em;color:var(--color-text,#253b4d);margin:6px 0 7px;font-weight:800}
+.panelHead p{color:var(--color-text-secondary,#6b7d8c);font-size:12px;line-height:1.6;margin:0}
+.panelIcon{display:grid;place-items:center;width:37px;height:37px;border-radius:11px;background:var(--color-muted,#f0f5f7);color:#177d87;flex-shrink:0}
+.recentList{display:flex;flex-direction:column;gap:9px}
+.recentItem{display:flex;align-items:center;gap:11px;min-width:0;border:1px solid var(--color-border,#e0e8ee);border-radius:11px;padding:13px;text-decoration:none;transition:border-color .18s,background .18s}
+.recentItem:hover{background:var(--color-muted,#f7fafb);border-color:#96d2c7}
+.docIcon{width:37px;height:37px;display:grid;place-items:center;border-radius:10px;background:#e4f5f1;color:#1c8275;flex-shrink:0}
+.docInfo{min-width:0;display:flex;flex-direction:column;gap:5px;flex:1}.docInfo strong{font-size:12px;color:var(--color-text,#2a3d53);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.docInfo small{font-size:10px;color:var(--color-text-secondary,#6a8090);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.docInfo small span{margin-inline:4px}.statusBadge{white-space:nowrap;display:inline-block;border-radius:99px;font-size:10px;font-weight:800;padding:6px 9px}
+.muted{color:#5d6b7d;background:var(--color-muted,#eef2f5)}.info{background:#e7efff;color:#2057a4}.warning{background:#fff1d9;color:#97661b}.danger{background:#ffebea;color:#af3943}.success{background:#ddf8e7;color:#197954}
+.itemArrow{color:var(--color-text-secondary,#88949f);flex-shrink:0}
+.viewAll{display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--color-primary,#176d86);text-decoration:none;font-size:12px;font-weight:800;padding-top:19px;margin-top:auto}
+.emptyState{display:flex;align-items:center;flex-direction:column;text-align:center;gap:9px;padding:35px 15px;color:var(--color-text-secondary,#72808b)}
+.emptyState>span{display:grid;place-items:center;width:58px;height:58px;background:var(--color-muted,#eef5f7);border-radius:17px;color:#238475;margin-bottom:6px}
+.emptyState strong{color:var(--color-text,#243b4d);font-size:14px}.emptyState p{font-size:12px;max-width:300px;line-height:1.65;margin:0}
+.emptyState a{display:inline-flex;align-items:center;gap:7px;color:var(--color-primary,#167b88);font-size:12px;font-weight:800;margin-top:4px}
+.guide{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column}
+.guide li{display:flex;gap:13px;align-items:flex-start;position:relative;padding:0 0 23px}
+.guide li:not(:last-child):before{content:"";position:absolute;left:19px;top:39px;bottom:4px;border-left:1.5px dashed var(--color-border,#bcd3d4)}
+.guideNumber{display:grid;place-items:center;flex-shrink:0;width:39px;height:39px;border-radius:12px;background:#e5f5f1;color:#167766;font-size:11px;font-weight:900}
+.guide li>div{flex:1;min-width:0;padding-top:2px}.guide strong{font-size:12px;color:var(--color-text,#263e4f)}.guide p{margin:6px 0 0;color:var(--color-text-secondary,#708090);font-size:11px;line-height:1.75}
+.guide li>svg{color:#3caa8b;flex-shrink:0;margin-top:9px}
+.guideLink{display:flex;align-items:center;gap:9px;background:var(--color-muted,#f0f8f7);border:1px solid var(--color-border,#d2e6e3);border-radius:10px;padding:13px;color:var(--color-text,#1f6d6b);font-size:12px;font-weight:800;text-decoration:none;margin-top:auto}
+.guideLink svg:last-child{margin-left:auto}.guideLink:hover{border-color:#64c7b3}
+.footnote{display:flex;align-items:flex-start;gap:10px;color:var(--color-text-secondary,#748696);font-size:11px;line-height:1.65;padding:8px 2px}
+.footnote svg{flex-shrink:0;color:#228e7f;margin-top:1px}.footnote p{margin:0}
+@media(max-width:1100px){.welcome{grid-template-columns:1fr}.heroCard{max-width:none}.overview{grid-template-columns:repeat(2,minmax(0,1fr))}.contentGrid{grid-template-columns:1fr}}
+@media(max-width:710px){.overview{grid-template-columns:1fr}.welcome{padding:25px;border-radius:18px}.welcome h1{font-size:30px}.heroCard{padding:18px}.overviewCard{padding:18px}.recentItem{gap:8px}.itemArrow{display:none}}
+@media(max-width:420px){.welcomeActions{flex-direction:column;align-items:stretch}.primaryCta,.secondaryCta{width:100%}.recentItem{flex-wrap:wrap}.statusBadge{margin-left:48px}.docInfo{flex-basis:calc(100% - 60px)}}
+@media(prefers-reduced-motion:reduce){.primaryCta,.secondaryCta,.recentItem{transition:none}.primaryCta:hover{transform:none}}
+:global([data-theme="dark"]) .welcome{background:linear-gradient(115deg,#0c253a,#0a5054)}
+:global([data-theme="dark"]) .overviewIcon,:global([data-theme="dark"]) .panelIcon{background:#193d49;color:#9ae3da}
+:global([data-theme="dark"]) .docIcon,:global([data-theme="dark"]) .guideNumber{background:#174b44;color:#a4e8d2}
+:global([data-theme="dark"]) .liveBadge,:global([data-theme="dark"]) .success{background:#164631;color:#a8eac9}
+:global([data-theme="dark"]) .info{background:#253e61;color:#bad4ff}
+:global([data-theme="dark"]) .warning{background:#513d24;color:#f4d8a8}
+:global([data-theme="dark"]) .danger{background:#562b31;color:#ffc4c6}
+
+/* Institutional dashboard — a restrained information-first composition. */
+.page { gap: 20px; }
+.welcome {
+  grid-template-columns: minmax(0, 1.45fr) minmax(250px, .68fr);
+  gap: 30px;
+  padding: clamp(28px, 3.2vw, 43px);
+  border: 1px solid #234a61;
+  border-left: 5px solid #ac5744;
+  border-radius: 8px;
+  background: #173c53;
+  box-shadow: none;
+}
+.welcome::before { display: none; }
+.eyebrow {
+  color: #e6b7a6;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .10em;
+}
+.welcome h1 {
+  font-weight: 720;
+  font-size: clamp(29px, 3.15vw, 43px);
+  letter-spacing: -.045em;
+  line-height: 1.17;
+  margin: 22px 0 16px;
+}
+.welcome h1 span {
+  display: block;
+  margin-top: 3px;
+  font-weight: 430;
+  color: #dbe5e9;
+}
+.welcome>div>p { color: #c5d5dd; font-size: 13px; line-height: 1.8; }
+.welcomeActions { margin-top: 28px; gap: 11px; }
+.primaryCta, .secondaryCta { border-radius: 5px; font-weight: 690; font-size: 12px; min-height: 44px; }
+.primaryCta { background: #f5f5f2; color: #163b52; }
+.primaryCta:hover { background: #fff; transform: none; }
+.secondaryCta { background: transparent; border-color: #78909e; }
+.secondaryCta:hover { background: rgba(255,255,255,.08); }
+.heroCard {
+  border-radius: 4px;
+  padding: 24px;
+  background: #21475d;
+  border: 1px solid #45677a;
+  backdrop-filter: none;
+}
+.heroCardIcon { width: 37px; height: 37px; border-radius: 4px; margin-bottom: 20px; background: transparent; border: 1px solid #63889a; color: #d6e6ed; }
+.heroCardTag { color: #aecbda; letter-spacing: .1em; font-weight: 700; }
+.heroCard strong { font-size: 17px; line-height: 1.5; font-weight: 640; letter-spacing: -.015em; }
+.heroCard p { color: #cbdce3; font-size: 12px; }
+.heroCardFooter { color: #dfebe8; font-weight: 620; font-size: 11px; }
+.overview { gap: 13px; }
+.overviewCard { padding: 19px; gap: 14px; border-radius: 7px; box-shadow: none; }
+.overviewIcon { border-radius: 5px; width: 38px; height: 38px; background: #eaf1f4; color: #235b72; }
+.overviewCard>div:nth-child(2) { gap: 7px; }
+.overviewCard span:not(.liveBadge):not(.quietBadge) { font-weight: 620; }
+.overviewCard strong { font-size: 16px; font-weight: 720; }
+.liveBadge, .quietBadge { border-radius: 3px; font-size: 10px; padding: 4px 7px; font-weight: 680; }
+.liveBadge { background: #e5f5ed; color: #236946; }
+.contentGrid { gap: 14px; }
+.panel { padding: clamp(19px, 2.5vw, 28px); border-radius: 7px; box-shadow: none; }
+.panelEyebrow { color: #976045; font-weight: 750; letter-spacing: .09em; }
+.panelHead h2 { font-size: 18px; font-weight: 710; }
+.panelIcon { border-radius: 5px; background: #eef2f4; color: #4a6c7c; }
+.recentList { gap: 0; }
+.recentItem { border: 0; border-bottom: 1px solid var(--color-border,#e0e8ee); border-radius: 0; padding: 15px 5px; }
+.recentItem:hover { border-color: var(--color-border,#e0e8ee); }
+.docIcon { border-radius: 4px; background: #eaf1f4; color: #42687b; }
+.statusBadge { border-radius: 4px; font-weight: 670; }
+.guideNumber { border-radius: 4px; }
+.emptyState>span { border-radius: 6px; }
+.viewAll { font-weight: 720; color: #215a78; }
+@media (max-width: 1020px) {
+  .welcome { gap: 18px; }
+  .heroCard { padding: 20px; }
+}
+@media (max-width: 680px) {
+  .welcome { padding: 26px 23px; grid-template-columns: minmax(0,1fr); }
+  .welcome h1 { font-size: 31px; }
+  .heroCard { display: none; }
+  .overviewCard { border-radius: 6px; }
+}

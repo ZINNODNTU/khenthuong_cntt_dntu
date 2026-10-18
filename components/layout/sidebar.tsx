@@ -80,7 +80,7 @@ export function Sidebar({
             </div>
             <div className="sidebar-brand-text">
               <strong>CNTT DNTU</strong>
-              <span>Xét duyệt thành tích</span>
+              <span>Khen thưởng Đoàn – Hội</span>
             </div>
           </Link>
           <button type="button" className="sidebar-toggle" aria-label={collapsed ? "Mở rộng" : "Thu gọn"} aria-pressed={collapsed} onClick={toggle}>

@@ -80,7 +80,7 @@ test.describe("Login page — interaction", () => {
     await page.goto("/login", { waitUntil: "networkidle" });
 
     // Check the key elements exist
-    await expect(page.locator("h1")).toContainText("Đăng nhập");
+    await expect(page.getByRole("heading", { name: /Đăng nhập/ })).toBeVisible();
     await expect(page.locator("#login-email")).toBeVisible();
     await expect(page.locator("#login-password")).toBeVisible();
     await expect(page.getByRole("button", { name: /đăng nhập/i })).toBeVisible();
@@ -107,7 +107,7 @@ test.describe("Mobile sidebar drawer", () => {
     // Login page doesn't have sidebar, so this is a structural check
     // The sidebar drawer test would need auth — covered in ui-audit.spec.ts
     await page.goto("/login", { waitUntil: "networkidle" });
-    await expect(page.locator("h1")).toContainText("Đăng nhập");
+    await expect(page.getByRole("heading", { name: /Đăng nhập/ })).toBeVisible();
   });
 });
 
