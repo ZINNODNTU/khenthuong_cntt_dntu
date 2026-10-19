@@ -6,7 +6,9 @@ function safeNext(value: string | null) {
   if (
     !value ||
     !value.startsWith("/") ||
-    value.startsWith("//")
+    value.startsWith("//") ||
+    value.includes("\\") ||
+    /[\r\n]/.test(value)
   ) {
     return "/";
   }
@@ -23,7 +25,8 @@ export async function GET(request: Request) {
   const type =
     url.searchParams.get("type") as EmailOtpType | null;
 
-  const next = safeNext(
+  // Recovery links always open the reset form regardless of query-string input.
+  const next = type === "recovery" ? "/reset-password" : safeNext(
     url.searchParams.get("next"),
   );
 

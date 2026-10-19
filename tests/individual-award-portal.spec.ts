@@ -14,6 +14,22 @@ test("Trang đăng ký không giới thiệu xét tập thể", async ({ page })
   await expect(page.locator("body")).not.toContainText("Bộ tiêu chí tập thể");
 });
 
+
+test("Trang đăng nhập có quên mật khẩu và luồng yêu cầu email", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByRole("link", { name: "Quên mật khẩu?" }).click();
+  await expect(page).toHaveURL(/\/forgot-password$/);
+  await expect(page.getByRole("heading", { name: "Quên mật khẩu?" })).toBeVisible();
+  await page.getByLabel("MSSV hoặc email đăng ký").fill("khonghople@");
+  await page.getByRole("button", { name: /Gửi liên kết khôi phục/ }).click();
+  await expect(page.getByText("Vui lòng nhập MSSV hoặc địa chỉ email hợp lệ.")).toBeVisible();
+});
+
+test("Trang đặt lại mật khẩu không mở cho khách chưa xác thực", async ({ page }) => {
+  await page.goto("/reset-password");
+  await expect(page).toHaveURL(/\/forgot-password\?reason=expired/);
+});
+
 test("Các trang nghiệp vụ vẫn yêu cầu xác thực", async ({ page }) => {
   const res = await page.goto("/applications/new");
   expect([307, 200].includes(res?.status() || 0)).toBe(true);

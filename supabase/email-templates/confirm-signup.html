@@ -1,150 +1,22 @@
 <!doctype html>
 <html lang="vi">
-  <head>
-    <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1"
-    />
-    <title>Xác nhận tài khoản</title>
-  </head>
-
-  <body
-    style="
-      margin:0;
-      padding:0;
-      background:#f8fafc;
-      color:#0f172a;
-      font-family:Arial,Helvetica,sans-serif;
-    "
-  >
-    <table
-      role="presentation"
-      width="100%"
-      cellspacing="0"
-      cellpadding="0"
-      style="background:#f8fafc;padding:32px 12px"
-    >
-      <tr>
-        <td align="center">
-          <table
-            role="presentation"
-            width="100%"
-            cellspacing="0"
-            cellpadding="0"
-            style="
-              max-width:600px;
-              overflow:hidden;
-              background:#ffffff;
-              border:1px solid #e2e8f0;
-              border-radius:16px;
-            "
-          >
-            <tr>
-              <td
-                style="
-                  padding:28px 30px;
-                  color:#ffffff;
-                  background:#0f2147;
-                "
-              >
-                <div
-                  style="
-                    font-size:12px;
-                    font-weight:700;
-                    letter-spacing:.08em;
-                  "
-                >
-                  KHOA CÔNG NGHỆ THÔNG TIN · DNTU
-                </div>
-
-                <div
-                  style="
-                    margin-top:8px;
-                    font-size:24px;
-                    font-weight:800;
-                    line-height:1.3;
-                  "
-                >
-                  Xác nhận tài khoản
-                </div>
-              </td>
-            </tr>
-
-            <tr>
-              <td style="padding:30px">
-                <p
-                  style="
-                    margin:0;
-                    font-size:16px;
-                    line-height:1.7;
-                  "
-                >
-                  Xin chào,
-                </p>
-
-                <p
-                  style="
-                    margin:14px 0 0;
-                    color:#475569;
-                    font-size:15px;
-                    line-height:1.7;
-                  "
-                >
-                  Bạn vừa đăng ký tài khoản trên Hệ thống nộp và xét
-                  duyệt thành tích Khoa Công nghệ thông tin. Vui lòng
-                  xác nhận địa chỉ email để kích hoạt tài khoản.
-                </p>
-
-                <div style="padding:26px 0;text-align:center">
-                  <a
-                    href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=%2F%3Fconfirmed%3D1"
-                    style="
-                      display:inline-block;
-                      padding:13px 22px;
-                      color:#ffffff;
-                      background:#2563eb;
-                      border-radius:10px;
-                      font-size:15px;
-                      font-weight:700;
-                      text-decoration:none;
-                    "
-                  >
-                    Xác nhận tài khoản
-                  </a>
-                </div>
-
-                <p
-                  style="
-                    margin:0;
-                    color:#64748b;
-                    font-size:13px;
-                    line-height:1.65;
-                  "
-                >
-                  Nếu bạn không thực hiện đăng ký này, hãy bỏ qua email.
-                  Không chuyển tiếp liên kết xác nhận cho người khác.
-                </p>
-              </td>
-            </tr>
-
-            <tr>
-              <td
-                style="
-                  padding:18px 30px;
-                  color:#64748b;
-                  background:#f8fafc;
-                  border-top:1px solid #e2e8f0;
-                  font-size:12px;
-                  line-height:1.6;
-                "
-              >
-                Đoàn TNCS Hồ Chí Minh · Khoa Công nghệ thông tin · DNTU
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-  </body>
-</html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>Xác nhận tài khoản</title></head>
+<body style="margin:0;padding:0;background:#f4f6fa;color:#162a40;font-family:Arial,Helvetica,sans-serif;">
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#f4f6fa;"><tr><td align="center" style="padding:40px 16px;">
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:560px;background:#ffffff;border:1px solid #dfe5ed;">
+<tr><td style="padding:24px 34px;background:#16354e;color:#ffffff;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td width="54" valign="middle"><span style="display:inline-block;padding:12px 10px;border:1px solid #97adc1;font-size:16px;font-weight:700;letter-spacing:1px;">IT</span></td><td valign="middle" style="padding-left:14px;"><div style="font-size:12px;font-weight:700;letter-spacing:1.4px;">KHOA CÔNG NGHỆ THÔNG TIN</div><div style="font-size:11px;color:#d3e0ea;padding-top:5px;">TRƯỜNG ĐẠI HỌC CÔNG NGHỆ ĐỒNG NAI</div></td></tr></table>
+</td></tr>
+<tr><td style="padding:37px 34px 28px;">
+<div style="color:#ac583d;font-size:11px;font-weight:700;letter-spacing:1.5px;">KÍCH HOẠT TÀI KHOẢN</div>
+<h1 style="font-size:26px;line-height:1.32;letter-spacing:-.4px;color:#16354e;margin:13px 0 20px;font-weight:700;">Xác nhận tài khoản</h1>
+<p style="font-size:15px;line-height:1.8;color:#253b52;margin:0 0 14px;">Xin chào,</p>
+<p style="font-size:15px;line-height:1.8;color:#475b70;margin:0 0 20px;">Bạn đã đăng ký sử dụng cổng xét khen thưởng Đoàn – Hội Khoa Công nghệ thông tin. Vui lòng xác minh địa chỉ email trước khi đăng nhập.</p>
+<p style="font-size:14px;line-height:1.7;color:#475b70;margin:0 0 30px;">Nhấn nút bên dưới để hoàn tất xác nhận tài khoản.</p>
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%"><tr><td align="center" style="padding-bottom:27px;"><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email&amp;next=%2F%3Fconfirmed%3D1" style="display:inline-block;background:#163e60;color:#ffffff;padding:15px 26px;text-decoration:none;border-radius:5px;font-size:14px;font-weight:700;">Xác nhận email &rarr;</a></td></tr></table>
+<p style="margin:0;padding:17px;background:#f3f6f8;font-size:12px;line-height:1.8;color:#617386;">Nếu bạn không yêu cầu đăng ký, hãy bỏ qua thư này. Không chia sẻ liên kết xác nhận với người khác.</p>
+</td></tr>
+<tr><td style="border-top:1px solid #e3e9ef;background:#fafbfc;padding:20px 34px;"><div style="font-size:12px;color:#617386;line-height:1.7;">Hệ thống xét khen thưởng Đoàn – Hội Khoa CNTT<br>Đây là email hệ thống. Vui lòng không trả lời thư này.</div></td></tr>
+</table>
+</td></tr></table>
+</body></html>

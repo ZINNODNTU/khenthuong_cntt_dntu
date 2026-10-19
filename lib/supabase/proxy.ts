@@ -3,6 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 const PUBLIC_PAGE_PREFIXES = [
     "/login",
     "/register",
+    "/forgot-password",
+    "/reset-password",
     "/configuration",
     "/design-preview",
     "/401",

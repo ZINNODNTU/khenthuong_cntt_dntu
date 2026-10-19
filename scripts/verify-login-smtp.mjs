@@ -14,6 +14,11 @@ function fail(message) {
 const requiredFiles = [
   "components/login-screen.tsx",
   "app/auth/confirm/route.ts",
+  "app/forgot-password/page.tsx",
+  "app/reset-password/page.tsx",
+  "components/reset-password-form.tsx",
+  "supabase/email-templates/recovery.html",
+  "supabase/email-templates/recovery-subject.txt",
   "supabase/email-templates/confirm-signup.html",
   "supabase/email-templates/confirm-signup-subject.txt",
   "docs/CUSTOM_SMTP_CONFIRMATION_EMAIL.md",
@@ -78,6 +83,28 @@ if (
   )
 ) {
   fail("Confirmation template has an invalid confirmation URL.");
+}
+
+const recoveryTemplate = readFileSync(
+  resolve(process.cwd(), "supabase/email-templates/recovery.html"),
+  "utf8",
+);
+if (
+  !recoveryTemplate.includes("{{ .RedirectTo }}?token_hash={{ .TokenHash }}") ||
+  !recoveryTemplate.includes("type=recovery")
+) {
+  fail("Recovery email must link to the configured redirect and use a recovery token hash.");
+}
+const forgotPage = readFileSync(
+  resolve(process.cwd(), "app/forgot-password/page.tsx"),
+  "utf8",
+);
+const resetForm = readFileSync(
+  resolve(process.cwd(), "components/reset-password-form.tsx"),
+  "utf8",
+);
+if (!forgotPage.includes("resetPasswordForEmail") || !resetForm.includes("auth.updateUser")) {
+  fail("Password recovery request/update flow is incomplete.");
 }
 
 const registerForm = readFileSync(

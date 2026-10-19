@@ -109,6 +109,23 @@ NEXT_PUBLIC_AUTH_EMAIL_SENDER_ADDRESS=email-xac-nhan@ten-mien
 Biến này chỉ giúp trang đăng ký thông báo người dùng cần tìm email từ địa chỉ
 nào. Nó không chứa mật khẩu và không thay thế cấu hình SMTP trong Supabase.
 
+
+## 7. Khôi phục mật khẩu và mẫu email thống nhất (19/10/2026)
+
+Các template mới trong repository:
+- `supabase/email-templates/confirm-signup.html` và `confirm-signup-subject.txt`: xác minh tài khoản.
+- `supabase/email-templates/recovery.html` và `recovery-subject.txt`: đặt lại mật khẩu.
+- Thiết kế dùng bảng HTML, CSS nội tuyến, tối ưu cho Gmail/Outlook và màn hình điện thoại, không cần tải hình từ máy chủ ngoài.
+
+Cấu hình tại Supabase Dashboard → **Authentication → Email Templates**:
+1. Chọn **Confirm signup**, dán tiêu đề từ file subject và toàn bộ HTML tương ứng. Mẫu xác nhận dùng `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`.
+2. Chọn **Reset Password/Recovery**, dán tiêu đề và HTML từ các file recovery. Mẫu dùng `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=recovery`. Chỉ sử dụng token hash qua endpoint `/auth/confirm`, không gửi mật khẩu qua email.
+3. Cấu hình Authentication → **URL Configuration**: Site URL phải là **tên miền production thực tế**; thêm redirect `https://<TEN-MIEN-PRODUCTION>/auth/confirm` và `http://localhost:3000/auth/confirm`.
+4. Duy trì SMTP đã được chủ tài khoản email cấp quyền; kiểm tra SPF/DKIM/DMARC và Sender Name. Không dùng địa chỉ DNTU làm người gửi nếu SMTP không được cấp phép.
+5. Mở trang `/forgot-password` từ trang đăng nhập; nhập MSSV/email; dùng **tài khoản thử** và hộp thư thuộc quyền sở hữu để kiểm tra. Liên kết xác minh chuyển tới `/reset-password`; nhập mật khẩu mới đủ 12 ký tự, sau đó đăng nhập lại.
+
+**Quan trọng:** Push GitHub và `vercel deploy` không tự cập nhật template của Supabase Auth đã chạy trên cloud. Việc cập nhật template bắt buộc thực hiện trong Supabase Dashboard hoặc API quản lý có quyền phù hợp. Không sử dụng SQL migration để thay thế email Auth.
+
 ## 6. Kiểm tra
 
 1. Đăng ký bằng một MSSV thử nghiệm.
