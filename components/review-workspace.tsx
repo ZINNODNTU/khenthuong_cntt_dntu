@@ -162,7 +162,7 @@ export function ReviewWorkspace({ evidences, entries = [], review, children }: P
                             <span>{item.file_name}</span><ChevronRight size={14} />
                           </button>)}
                         </div>}
-                    </> : <span className={styles.missing}>Chưa có minh chứng</span>}
+                    </> : code === "C9" && review.applicationType === "individual" ? <span className={styles.missing}>{review.criteria?.find(row => row.code === "C9")?.boolean_value === true ? "Đã tích cam kết (không yêu cầu tệp)" : "Chưa có cam kết"}</span> : <span className={styles.missing}>Chưa có minh chứng</span>}
                   </div>;
                 })}
               </div>

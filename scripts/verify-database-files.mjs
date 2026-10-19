@@ -39,6 +39,7 @@ for (const [source, filename] of [
   [resolve(process.cwd(), "supabase/database/07_EVIDENCE_ENTRIES.sql"), "20261009100000_evidence_entries.sql"],
   [resolve(process.cwd(), "supabase/database/08_COLLECTIVE_CRITERIA_T.sql"), "20261009110000_collective_criteria_t_codes.sql"],
     [resolve(process.cwd(), "supabase/database/09_EVIDENCE_CONTENT_INTEGRITY.sql"), "20261009120000_evidence_content_integrity.sql"],
+    [resolve(process.cwd(), "supabase/database/10_OPTIONAL_PERSONAL_COMMITMENT.sql"), "20261019220000_optional_personal_achievement_commitment.sql"],
 ]) {
   const target = resolve(process.cwd(), "supabase/migrations", filename);
   if (!existsSync(target)) {
@@ -58,6 +59,7 @@ if (!existsSync(installerFile)) {
     "BEGIN 07_EVIDENCE_ENTRIES.sql",
     "BEGIN 08_COLLECTIVE_CRITERIA_T.sql",
     "BEGIN 09_EVIDENCE_CONTENT_INTEGRITY.sql",
+    "BEGIN 10_OPTIONAL_PERSONAL_COMMITMENT.sql",
     "evidences_content_sha256_check",
   ]) {
     if (!installer.includes(marker)) fail("New-project installer missing " + marker);

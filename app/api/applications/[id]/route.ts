@@ -13,6 +13,7 @@ const schema = z.object({
     achievements: z.string().trim().min(1, "Hãy nhập thành tích nổi bật.").max(15000),
     summary: z.string().max(8000).optional().default(""),
     resubmit: z.boolean().default(false),
+    disciplinaryCommitment: z.boolean().optional(),
     conductRating: z.enum(["Xuất sắc", "Tốt", "Khá", "Trung bình", "Yếu"]).nullable().optional(),
     cumulativeGpa: z.number().min(0).max(4).nullable().optional(),
     disciplinaryStatus: z.enum(["none", "warning", "reprimand_or_higher"]).optional(),
@@ -46,6 +47,9 @@ export async function PATCH(request: Request, { params }: {
     if (!parsed.success) {
         return NextResponse.json({ error: parsed.error.issues[0]?.message }, { status: 400 });
     }
+    if (parsed.data.resubmit && parsed.data.disciplinaryCommitment !== true) {
+        return NextResponse.json({ error: "Cần tích cam kết không bị kỷ luật từ mức khiển trách trở lên và không vi phạm quy định, quy chế Nhà trường." }, { status: 400 });
+    }
     const { data: app } = await supabase
         .from("applications")
         .select("id,created_by,status,application_type,collective_type,branch_code,club_id,evaluation_period_id")
@@ -78,11 +82,11 @@ export async function PATCH(request: Request, { params }: {
         if (parsed.data.cumulativeGpa !== undefined) criterionUpdates.push({
             code: "C8", values: { numeric_value: parsed.data.cumulativeGpa },
         });
-        if (parsed.data.disciplinaryStatus !== undefined) criterionUpdates.push({
+        if (parsed.data.resubmit && parsed.data.disciplinaryCommitment === true) criterionUpdates.push({
             code: "C9", values: {
-                value_text: parsed.data.disciplinaryStatus,
-                boolean_value: parsed.data.disciplinaryStatus === "none",
-                evidence_note: parsed.data.disciplinaryNote || null,
+                value_text: "committed",
+                boolean_value: true,
+                evidence_note: "Sinh viên đã tự tích cam kết khi gửi hồ sơ xét khen thưởng.",
             },
         });
     }

@@ -216,23 +216,6 @@ export function LoginScreen({ signupEnabled, loginQuery = {} }: { signupEnabled:
             <div className={styles.heroBadge}>KHEN THƯỞNG ĐOÀN – HỘI · KHOA CNTT</div>
             <h1>Xét khen thưởng<br /><em>Đoàn – Hội<br />Khoa CNTT.</em></h1>
             <p>Website tiếp nhận hồ sơ khen thưởng cá nhân tham gia công tác Đoàn – Hội và phong trào sinh viên Khoa Công nghệ thông tin.</p>
-            <div className={styles.process}>
-              <div className={styles.processHeading}>QUY TRÌNH THỰC HIỆN</div>
-              <div className={styles.processSteps}>
-                <div className={styles.step}>
-                  <span className={styles.stepNumber}>01</span>
-                  <div><strong>Gửi hồ sơ</strong><span>Điền thông tin và đính kèm tài liệu</span></div>
-                </div>
-                <div className={styles.step}>
-                  <span className={styles.stepNumber}>02</span>
-                  <div><strong>Đối chiếu minh chứng</strong><span>Xét theo 09 tiêu chí cá nhân C1–C9</span></div>
-                </div>
-                <div className={styles.step}>
-                  <span className={styles.stepNumber}>03</span>
-                  <div><strong>Nhận kết quả</strong><span>Theo dõi quyết định và yêu cầu bổ sung</span></div>
-                </div>
-              </div>
-            </div>
           </div>
           <footer className={styles.showcaseFooter}><span>© {new Date().getFullYear()} Khoa Công nghệ thông tin · DNTU</span><span>Khen thưởng Đoàn – Hội</span></footer>
         </aside>

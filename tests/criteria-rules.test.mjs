@@ -2,19 +2,27 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { CRITERION_CODES, validateCriteria } from "../lib/criteria-rules.ts";
 
-const rows = () => CRITERION_CODES.map(code => ({ code, status: "verified" }));
-
-test("all nine criteria must exist at submission", () => {
+const rows = () => CRITERION_CODES.map(code => ({ code, status: "verified", ...(code === "C9" ? { boolean_value: true } : {}) }));
+const evidence = ["criterion_c2","criterion_c7","criterion_c8"];
+test("all nine criterion records must exist at submission", () => {
   assert.match(validateCriteria([], "individual", "submit").join(" "), /thiếu các tiêu chí/);
   assert.deepEqual(validateCriteria(rows(), "individual", "submit"), []);
 });
-test("pass requires every applicable criterion verified, never numeric scoring", () => {
+test("pass requires selected A criteria and all B criteria verified", () => {
   const data = rows();
-  data[0].status = "rejected"; data[7].status = "pending";
-  const issues = validateCriteria(data, "individual", "pass").join(" ");
-  assert.match(issues, /C1/);
-  assert.match(issues, /C8/);
-  assert.deepEqual(validateCriteria(rows(), "individual", "pass"), []);
+  data[0].status = "pending";
+  assert.deepEqual(validateCriteria(data, "individual", "pass", evidence), []);
+  data[1].status = "rejected";
+  assert.match(validateCriteria(data, "individual", "pass", evidence).join(" "), /C2/);
+  data[1].status = "verified";
+  data[7].status = "pending";
+  assert.match(validateCriteria(data, "individual", "pass", evidence).join(" "), /C8/);
+});
+test("pass requires a commitment and at least one personal achievement", () => {
+  const data = rows();
+  data[8].boolean_value = false;
+  assert.match(validateCriteria(data, "individual", "pass", evidence).join(" "), /cam kết/);
+  assert.match(validateCriteria(rows(), "individual", "pass", ["criterion_c7","criterion_c8"]).join(" "), /ít nhất một/);
 });
 test("collective review considers C1-C6 only", () => {
   const data = rows();
@@ -24,5 +32,5 @@ test("collective review considers C1-C6 only", () => {
 test("duplicate criterion is refused", () => {
   const data = rows();
   data.push({ ...data[0] });
-  assert.match(validateCriteria(data, "individual", "pass").join(" "), /trùng/);
+  assert.match(validateCriteria(data, "individual", "pass", evidence).join(" "), /trùng/);
 });

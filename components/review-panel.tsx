@@ -49,11 +49,12 @@ export function ReviewPanel({
   const ordered = useMemo(() => [...criteria].filter(row => applicableCodes.includes(row.code))
     .sort((a, b) => applicableCodes.indexOf(a.code) - applicableCodes.indexOf(b.code)), [criteria, applicableCodes.join(",")]);
   const issues = useMemo(() => [
-    ...validateCriteria(criteria, applicationType, "pass"),
+    ...validateCriteria(criteria, applicationType, "pass", evidences.map(item => item.category)),
     ...validateCriterionEvidence(evidences.map(item => item.category), applicationType, criteria.map(row => row.code)),
   ], [criteria, applicationType, evidences]);
   const canPass = canReview && issues.length === 0;
-  const resolved = ordered.filter(row => ["verified", "rejected"].includes(row.status)).length;
+  const requiredForReview = applicationType === "individual" ? applicableCodes.filter(code => ["C7", "C8", "C9"].includes(code) || evidences.some(item => item.category === criterionCategory(code))) : applicableCodes;
+  const resolved = ordered.filter(row => requiredForReview.includes(row.code) && ["verified", "rejected"].includes(row.status)).length;
   const filteredCriteria = criterionFilter === "all" ? ordered : ordered.filter(row => row.status === criterionFilter);
   const filterOptions = [
     { key: "all", text: "Tất cả", count: ordered.length },
@@ -116,13 +117,13 @@ export function ReviewPanel({
         <h2>Đánh giá Đạt / Không đạt</h2>
         <p className="scorecard-intro">Đối chiếu từng minh chứng trên Google Drive. Không chấm điểm, không xếp hạng theo thang điểm.</p>
         <div className="scorecard-metrics">
-          <div><strong>{resolved}/{applicableCodes.length}</strong><span>Đã đánh giá</span></div>
-          <div><strong>{ordered.filter(row => row.status === "verified").length}</strong><span>Đạt</span></div>
-          <div><strong>{ordered.filter(row => row.status === "rejected").length}</strong><span>Không đạt</span></div>
+          <div><strong>{resolved}/{requiredForReview.length}</strong><span>Đã đánh giá</span></div>
+          <div><strong>{ordered.filter(row => requiredForReview.includes(row.code) && row.status === "verified").length}</strong><span>Đạt</span></div>
+          <div><strong>{ordered.filter(row => requiredForReview.includes(row.code) && row.status === "rejected").length}</strong><span>Không đạt</span></div>
         </div>
-        <div className="scorecard-progress" role="progressbar" aria-valuemin={0} aria-valuemax={applicableCodes.length}
+        <div className="scorecard-progress" role="progressbar" aria-valuemin={0} aria-valuemax={requiredForReview.length}
           aria-valuenow={resolved} aria-label="Tiến độ xét duyệt">
-          <span style={{ width: `${resolved / applicableCodes.length * 100}%` }} />
+          <span style={{ width: `${resolved / Math.max(1, requiredForReview.length) * 100}%` }} />
         </div>
         <div id="review-assignment" className="scorecard-assignment">
           {canReview ? <p><UserRoundCheck size={17} /> Bạn có quyền xét hồ sơ này</p>
@@ -138,7 +139,7 @@ export function ReviewPanel({
       {message && <div className="notice notice-success" role="status">{message}</div>}
 
       <section className="card scorecard-criteria">
-        <div className="scorecard-section-head"><h3>Kiểm tra minh chứng</h3><span>{resolved}/{applicableCodes.length} tiêu chí</span></div>
+        <div className="scorecard-section-head"><h3>Kiểm tra minh chứng</h3><span>{resolved}/{requiredForReview.length} tiêu chí</span></div>
         <div className="scorecard-filter-tabs" role="group" aria-label="Lọc tiêu chí theo kết quả">
           {filterOptions.map(option => <button key={option.key} type="button"
             className={criterionFilter === option.key ? "is-active" : ""}
@@ -159,7 +160,7 @@ export function ReviewPanel({
               </span>
             </div>
             <h4>{row.title || getCriterionDefinition(applicationType, row.code).title}</h4>
-            <p className="text-sm text-secondary">{items.length} minh chứng đã nộp</p>
+            <p className="text-sm text-secondary">{row.code === "C9" && applicationType === "individual" ? (row.boolean_value === true ? "Đã tích cam kết không vi phạm kỷ luật và quy chế Nhà trường." : "Chưa tích cam kết.") : `${items.length} minh chứng đã nộp`}</p>
             {items.length ? <ul className="flex flex-col gap-2">
               {items.map(item => <li key={item.id}>
                 {onInspectEvidence && <button className="scorecard-preview-button" type="button" disabled={!isAdmin && !mine} onClick={() => onInspectEvidence(item.id)}>Xem trước</button>}
@@ -167,14 +168,14 @@ export function ReviewPanel({
                   {item.file_name} ({Math.ceil(item.size_bytes / 1024)} KB) ↗
                 </a>}
               </li>)}
-            </ul> : <p className="scorecard-warning">Chưa có minh chứng cho tiêu chí này.</p>}
+            </ul> : row.code === "C9" && applicationType === "individual" ? null : row.code.startsWith("C") && Number(row.code.slice(1)) <= 6 ? <p className="text-sm text-secondary">Không kê khai ở tiêu chí tự chọn này.</p> : <p className="scorecard-warning">Chưa có minh chứng cho tiêu chí bắt buộc.</p>}
             <label className="field-label" htmlFor={`note-${row.code}`}>Nhận xét (bắt buộc khi Không đạt)</label>
             <textarea className="textarea scorecard-note" id={`note-${row.code}`} rows={2} maxLength={3000}
               value={notes[row.code] || ""} disabled={!canReview || busy}
               onChange={event => setNotes(current => ({ ...current, [row.code]: event.target.value }))}
               placeholder="Ghi rõ minh chứng không hợp lệ hoặc nội dung cần bổ sung..." />
             <div className="scorecard-criterion-actions">
-              <Button variant="outline" size="sm" disabled={!canReview || busy || items.length === 0}
+              <Button variant="outline" size="sm" disabled={!canReview || busy || (row.code === "C9" && applicationType === "individual" ? row.boolean_value !== true : items.length === 0)}
                 onClick={() => verify(row.code, "verified")}><CheckCircle2 size={15} /> Đạt</Button>
               <Button variant="outline" size="sm" disabled={!canReview || busy}
                 onClick={() => verify(row.code, "rejected")}><CircleX size={15} /> Không đạt</Button>

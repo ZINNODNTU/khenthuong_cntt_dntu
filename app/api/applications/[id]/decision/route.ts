@@ -32,14 +32,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   // Immediate, friendly preflight for reviewer; the SQL RPC repeats the guard
   // under an application row lock, so simultaneous reviews cannot bypass it.
   if (status === "passed") {
-    const [{ data: app, error: appError }, { data: criteria, error: criteriaError }] = await Promise.all([
+    const [{ data: app, error: appError }, { data: criteria, error: criteriaError }, { data: evidence, error: evidenceError }] = await Promise.all([
       supabase.from("applications").select("application_type").eq("id", id).maybeSingle(),
       supabase.from("application_criteria").select("code,status,value_text,numeric_value,boolean_value").eq("application_id", id),
+      supabase.from("evidences").select("category").eq("application_id", id),
     ]);
-    if (appError || criteriaError || !app) {
+    if (appError || criteriaError || evidenceError || !app) {
       return NextResponse.json({ error: "Không thể kiểm tra phiếu đánh giá của hồ sơ." }, { status: 400 });
     }
-    const issues = validateCriteria((criteria || []) as ApplicationCriterion[], app.application_type, "pass");
+    const issues = validateCriteria((criteria || []) as ApplicationCriterion[], app.application_type, "pass", (evidence || []).map(row => row.category));
     if (issues.length) return NextResponse.json({ error: issues.join(" ") }, { status: 422 });
   }
 
@@ -53,7 +54,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       APPLICATION_NOT_REVIEWABLE: "Hồ sơ đã được xử lý hoặc không còn chờ xét duyệt.",
       APPLICATION_NOT_ASSIGNED: "Bạn phải nhận phụ trách hồ sơ trước khi kết luận.",
       CRITERIA_INCOMPLETE: "Hồ sơ chưa được khởi tạo đủ 9 tiêu chí.",
-      CRITERIA_UNVERIFIED: "Cần giải quyết đầy đủ cả 9 tiêu chí trước khi kết luận ĐẠT.",
+      CRITERIA_UNVERIFIED: "Cần đánh giá Đạt mọi tiêu chí đã kê khai ở nhóm A và các điều kiện bắt buộc ở nhóm B.",
+      PERSONAL_ACHIEVEMENT_REQUIRED: "Nhóm A cần ít nhất một tiêu chí thành tích có minh chứng.",
+      DISCIPLINARY_COMMITMENT_REQUIRED: "C9: Sinh viên chưa xác nhận cam kết về kỷ luật và quy chế Nhà trường.",
       REQUIRED_CRITERIA_NOT_ELIGIBLE: "C7–C9 chưa đáp ứng điều kiện bắt buộc.",
       REVIEW_REASON_REQUIRED: "Vui lòng ghi rõ lý do không đạt hoặc yêu cầu bổ sung.",
     };

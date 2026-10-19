@@ -2,13 +2,13 @@
 
 ## Quy tắc vận hành
 
-- **C1–C6:** mỗi tiêu chí bắt buộc tối thiểu 1 và tối đa **20** minh chứng (có thể chọn nhiều tệp).
+- **C1–C6 (nhóm A):** không bắt buộc nộp đủ cả sáu tiêu chí. Sinh viên kê khai những tiêu chí có thành tích, tối thiểu **01 tiêu chí** có minh chứng; mỗi tiêu chí có thể đính kèm tối đa **20** tệp.
 - **C7:** kết quả rèn luyện loại Tốt hoặc Xuất sắc: **đúng 1** minh chứng.
 - **C8:** bảng điểm/xác nhận ĐTB tích lũy đề xuất từ 2,80/4,00: **đúng 1** minh chứng.
-- **C9:** xác nhận không bị kỷ luật từ khiển trách trở lên và không vi phạm quy định/quy chế: **đúng 1** minh chứng.
+- **C9 (nhóm B):** sinh viên **bắt buộc tích ô cam kết** không bị kỷ luật từ mức khiển trách trở lên và không vi phạm quy định, quy chế Nhà trường. Không phải tải tệp riêng; Hội đồng vẫn có trách nhiệm đối chiếu, xác minh.
 - Hồ sơ tập thể sử dụng C1–C6; các điều kiện cá nhân C7–C9 không yêu cầu cho hồ sơ tập thể.
 - Từng tiêu chí chỉ có trạng thái *Chưa đánh giá* → *Đạt* hoặc *Không đạt*; nút đặt lại giúp chỉnh sửa trong thời gian xét. Không chấm điểm số, không dùng trọng số hay ngưỡng phần trăm.
-- Hệ thống yêu cầu tối thiểu 1 minh chứng cho **mỗi** tiêu chí áp dụng trước khi nộp; sau khi nộp, chỉ cán bộ có quyền mới đánh giá. Nếu thiếu minh chứng, hồ sơ có thể chuyển về *Yêu cầu bổ sung*.
+- Trước khi gửi hồ sơ cá nhân, yêu cầu **ít nhất 1 tiêu chí nhóm A có minh chứng**, C7 và C8 mỗi tiêu chí 1 tệp, C9 đã tích cam kết và có ảnh chân dung. Cán bộ có quyền xét duyệt những tiêu chí nhóm A đã kê khai và các điều kiện nhóm B; có thể yêu cầu bổ sung hoặc đối chiếu khi cần.
 - Hỗ trợ **JPG, PNG, WebP, PDF**; giới hạn mặc định **4 MB/tệp**. Không dùng liên kết Google Drive công khai cho minh chứng cá nhân.
 
 ## Cấu trúc và luồng lưu

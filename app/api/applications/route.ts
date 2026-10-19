@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     }
     const today = new Date();
     const latestAdultBirthDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
-    if (payload.birthDate && new Date(`${payload.birthDate}T00:00:00`) > latestAdultBirthDate) {
+    if (profile.birth_date && new Date(`${profile.birth_date}T00:00:00`) > latestAdultBirthDate) {
         return NextResponse.json({ error: "Người nộp hồ sơ phải đủ 18 tuổi." }, { status: 400 });
     }
     const outsideEvidenceRange = (date: string) => date && (date < period.evidence_starts_on || date > period.evidence_ends_on);
@@ -108,7 +108,7 @@ export async function POST(request: Request) {
         club_id: clubId,
         subject_name: payload.subjectName,
         student_id: studentId,
-        birth_date: payload.birthDate || null,
+        birth_date: profile.birth_date,
         position: payload.position || null,
         phone: payload.phone || null,
         email: profile.email,
@@ -183,7 +183,7 @@ export async function POST(request: Request) {
         { code: "C6", title: "Sáng kiến, mô hình, giải pháp hoặc khả năng lan tỏa", value_text: payload.initiatives, evidence_note: payload.impact, },
         { code: "C7", title: "Kết quả rèn luyện đạt loại Tốt trở lên", value_text: payload.conductRating, evidence_note: "Kết quả rèn luyện năm học" },
         { code: "C8", title: "ĐTB tích lũy từ 2,80/4,00 trở lên", numeric_value: payload.cumulativeGpa, evidence_note: "Bảng điểm/giấy xác nhận" },
-        { code: "C9", title: "Không bị kỷ luật từ mức khiển trách trở lên", boolean_value: payload.disciplinaryStatus === "none", value_text: payload.disciplinaryStatus, evidence_note: payload.disciplinaryNote },
+        { code: "C9", title: "Cam kết chấp hành kỷ luật và quy chế Nhà trường", boolean_value: false, value_text: null, evidence_note: "Chờ sinh viên tích cam kết khi gửi hồ sơ" },
     ];
     const criteria = individualCriteria.map(item => ({
         code: item.code as import("@/lib/types").CriterionCode,

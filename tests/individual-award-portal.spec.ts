@@ -5,7 +5,7 @@ test("Website nhận diện khen thưởng Đoàn – Hội Khoa CNTT", async ({
   await expect(page).toHaveTitle(/Xét khen thưởng Đoàn – Hội Khoa Công nghệ thông tin/);
   await expect(page.getByRole("heading", { name: /Xét khen thưởng Đoàn – Hội Khoa CNTT/ })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Đăng nhập" })).toBeVisible();
-  await expect(page.getByText("09 tiêu chí cá nhân C1–C9")).toBeVisible();
+  await expect(page.getByText("QUY TRÌNH THỰC HIỆN")).toHaveCount(0);
 });
 
 test("Trang đăng ký không giới thiệu xét tập thể", async ({ page }) => {

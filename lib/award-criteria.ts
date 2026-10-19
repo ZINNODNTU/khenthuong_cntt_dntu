@@ -16,7 +16,7 @@ export type AwardCriterionDefinition = {
  * Mỗi tiêu chí được đánh giá ĐẠT / KHÔNG ĐẠT dựa trên minh chứng có thể đối chiếu;
  * không tự đặt điểm số, số hoạt động tối thiểu hoặc cấp giải bắt buộc.
  * C1–C6: nhiều mục thành tích và nhiều tệp mỗi mục.
- * C7–C9: một mục thông tin, đúng một tệp mỗi tiêu chí.
+ * C7–C8: mỗi tiêu chí một tệp; C9: tích cam kết điện tử, không yêu cầu tệp.
  * Ngưỡng GPA 2,80/4,00 là đề xuất, cần hội đồng phê duyệt.
  */
 export const AWARD_CRITERIA: readonly AwardCriterionDefinition[] = [
@@ -126,15 +126,15 @@ export const AWARD_CRITERIA: readonly AwardCriterionDefinition[] = [
     code: "C9",
     title: "Không bị kỷ luật từ mức khiển trách trở lên trong năm học và không vi phạm quy định, quy chế Nhà trường",
     shortTitle: "Điều kiện kỷ luật",
-    description: "Tải đúng một tệp xác nhận/cam kết tình trạng kỷ luật trong năm học xét; đơn vị có trách nhiệm đối chiếu hồ sơ kỷ luật của Nhà trường trước khi kết luận.",
+    description: "Sinh viên tích ô cam kết trực tiếp khi gửi hồ sơ, không phải tải tệp. Hội đồng đối chiếu thông tin kỷ luật và vi phạm theo quy định trước khi kết luận.",
     reviewChecks: [
       "Đối chiếu thông tin cá nhân, năm học và tình trạng bị xử lý kỷ luật từ mức khiển trách trở lên.",
       "Kiểm tra thông tin vi phạm quy định, quy chế theo nguồn có thẩm quyền.",
       "Không kết luận Đạt chỉ dựa trên tự cam kết; trường hợp chưa rõ cần yêu cầu bổ sung/xác nhận.",
     ],
-    evidence: ["Xác nhận không bị kỷ luật trong năm học do đơn vị quản lý cấp", "Bản cam kết theo mẫu của đợt xét kèm xác minh từ đơn vị quản lý"],
+    evidence: ["Tích ô cam kết điện tử tại biểu mẫu nộp hồ sơ", "Hội đồng có thể yêu cầu xác minh với đơn vị quản lý khi cần"],
     category: "single",
-    condition: "Cá nhân: Không bị kỷ luật từ khiển trách trở lên, không vi phạm quy chế; 01 tệp để đối chiếu.",
+    condition: "Cá nhân: Bắt buộc tích cam kết không bị kỷ luật từ khiển trách trở lên và không vi phạm quy chế; không cần tải tệp.",
   },
 ];
 

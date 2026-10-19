@@ -11,6 +11,7 @@ const parts = [
   "07_EVIDENCE_ENTRIES.sql",
   "08_COLLECTIVE_CRITERIA_T.sql",
   "09_EVIDENCE_CONTENT_INTEGRITY.sql",
+  "10_OPTIONAL_PERSONAL_COMMITMENT.sql",
 ];
 const path = "supabase/database";
 const blocks = [
@@ -26,5 +27,5 @@ for (const name of parts) {
     `\n-- ======================== END ${name} ========================\n`);
 }
 const output = join(path, "INSTALL_NEW_PROJECT.sql");
-writeFileSync(output, blocks.join("\n") + "\n", { encoding: "utf8" });
+writeFileSync(output, blocks.join("\n").trimEnd() + "\n", { encoding: "utf8" });
 console.log(`Da tao ${output}; khong thuc thi SQL len Supabase.`);

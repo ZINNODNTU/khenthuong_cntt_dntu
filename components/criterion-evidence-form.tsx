@@ -47,7 +47,7 @@ export function CriterionEvidenceForm({
   const codes = [...getApplicationCriterionCodes(subject, app?.criteria?.map(row => row.code))];
   const [periodId, setPeriodId] = useState(app?.evaluation_period_id || periods[0]?.id || "");
   const [name, setName] = useState(app?.subject_name || fullName || "");
-  const [birthDate, setBirthDate] = useState(app?.birth_date || "");
+  const [disciplinaryCommitment, setDisciplinaryCommitment] = useState(false);
   const [entries, setEntries] = useState<EvidenceEntry[]>(app?.evidence_entries || []);
   const [selected, setSelected] = useState<Record<string, File[]>>({});
   const [expanded, setExpanded] = useState<string[]>([]);
@@ -108,7 +108,7 @@ export function CriterionEvidenceForm({
   function addEntry(code: CriterionCode) {
     if (busy || (isSingle(code) && entries.some(item => item.criterion_code === code))) return;
     const id = crypto.randomUUID();
-    // C7–C9 require one document only, not a separate activity description.
+    // C7-C8 accept a single uploaded document. C9 is a mandatory checkbox commitment.
     const title = isSingle(code)
       ? getCriterionDefinition(subject, code, app?.criteria?.find(item => item.code === code)?.title).shortTitle
       : "";
@@ -287,7 +287,6 @@ export function CriterionEvidenceForm({
       if (totalBytes > 60 * 1024 * 1024) throw new Error("Tổng dung lượng minh chứng vượt quá 60 MiB.");
       if (!periodId) throw new Error("Hãy chọn đợt xét.");
       if (!name.trim()) throw new Error("Hãy nhập họ tên sinh viên.");
-      if (individual && !app && !birthDate) throw new Error("Hãy nhập ngày sinh.");
       const allCategories = [
         ...stored.map(row => row.category),
         ...entries.flatMap(entry => (selected[entry.id] || []).map(() => criterionCategory(entry.criterion_code))),
@@ -295,6 +294,7 @@ export function CriterionEvidenceForm({
       if (mode.current === "submitted") {
         const issues = validateCriterionEvidence(allCategories, individual ? "individual" : "collective", codes);
         if (issues.length) throw new Error(issues.join(" "));
+        if (individual && !disciplinaryCommitment) throw new Error("Bạn cần tích xác nhận cam kết không vi phạm kỷ luật và quy chế Nhà trường (C9).");
         if (individual && !portrait && !stored.some(item => item.category === "portrait")) {
           throw new Error("Hồ sơ cá nhân cần một ảnh chân dung.");
         }
@@ -309,11 +309,11 @@ export function CriterionEvidenceForm({
             applicationType: individual ? "individual" : "collective",
             collectiveType: individual ? null : scope === "club" ? "club" : "branch",
             branchCode: branchCode || "", clubId: scope === "club" ? club?.id || null : null,
-            subjectName: name.trim(), birthDate, phone: "", position: "",
-            achievements: "Hồ sơ minh chứng theo 9 tiêu chí",
+            subjectName: name.trim(), phone: "", position: "",
+            achievements: "Hồ sơ minh chứng theo các tiêu chí đã kê khai",
             roleContribution: "", targetsResult: "", initiatives: "", impact: "",
             summary: "Minh chứng đã tải lên Google Drive theo từng tiêu chí.",
-            conductRating: null, cumulativeGpa: null, disciplinaryStatus: "none",
+            conductRating: null, cumulativeGpa: null, disciplinaryStatus: "warning",
             disciplinaryNote: "", activities: [], priorAwards: [],
           }),
         });
@@ -377,8 +377,9 @@ export function CriterionEvidenceForm({
         const response = await fetch(`/api/applications/${id}`, {
           method: "PATCH", headers: { "content-type": "application/json" },
           body: JSON.stringify({
-            achievements: "Hồ sơ minh chứng theo 9 tiêu chí",
+            achievements: "Hồ sơ minh chứng theo các tiêu chí đã kê khai",
             summary: "Minh chứng đã tải lên Google Drive theo từng tiêu chí.",
+            disciplinaryCommitment,
             resubmit: true,
           }),
         });
@@ -392,17 +393,23 @@ export function CriterionEvidenceForm({
     } finally { setBusy(false); setProgress(""); }
   }
 
-  const ready = codes.filter(code => filesFor(code).length + pendingFor(code).length > 0).length;
-  const percent = Math.round(ready / codes.length * 100);
+  const hasEvidence = (code: CriterionCode) => filesFor(code).length + pendingFor(code).length > 0;
+  const optionalCount = codes.filter(code => !isSingle(code) && hasEvidence(code)).length;
   const portraitReady = !individual || !!portrait || stored.some(item => item.category === "portrait");
-  const complete = ready === codes.length && portraitReady;
-  const pending = codes.length - ready;
+  const requiredDone = individual
+    ? Number(optionalCount > 0) + Number(hasEvidence("C7")) + Number(hasEvidence("C8")) + Number(disciplinaryCommitment) + Number(portraitReady)
+    : codes.filter(hasEvidence).length;
+  const requiredTotal = individual ? 5 : codes.length;
+  const ready = requiredDone;
+  const percent = Math.round(requiredDone / requiredTotal * 100);
+  const complete = requiredDone === requiredTotal;
+  const pending = requiredTotal - requiredDone;
   const fileCount = stored.length + (portrait ? 1 : 0) +
     Object.values(selected).reduce((sum, queue) => sum + queue.length, 0);
   const groups: { title: string; subtitle: string; codes: CriterionCode[]; number: string }[] = individual
     ? [
-      { number: "A", title: "Thành tích & đóng góp cá nhân", subtitle: "Các hoạt động và kết quả do sinh viên thực hiện", codes: codes.filter(code => !isSingle(code)) },
-      { number: "B", title: "Điều kiện bắt buộc của cá nhân", subtitle: "Rèn luyện, học tập và chấp hành quy định", codes: codes.filter(isSingle) },
+      { number: "A", title: "Thành tích & đóng góp cá nhân", subtitle: "Có thành tích ở tiêu chí nào, kê khai và nộp minh chứng ở tiêu chí đó; không yêu cầu đủ C1–C6.", codes: codes.filter(code => !isSingle(code)) },
+      { number: "B", title: "Điều kiện bắt buộc của cá nhân", subtitle: "C7, C8 nộp minh chứng; C9 tích cam kết chấp hành quy định.", codes: codes.filter(isSingle) },
     ]
     : [
       { number: "A", title: "Kết quả hoạt động tập thể", subtitle: "Bộ tiêu chí T1–T6 dành riêng cho Chi đoàn và CLB", codes },
@@ -426,11 +433,11 @@ export function CriterionEvidenceForm({
         </div>
         <div className={styles.progressCard} aria-live="polite">
           <div className={styles.progressHeading}><span>TIẾN ĐỘ HỒ SƠ</span><span>{percent}%</span></div>
-          <div className={styles.progressNumbers}><strong>{String(ready).padStart(2,"0")}</strong><span>/ {String(codes.length).padStart(2,"0")} tiêu chí</span></div>
-          <div className={styles.progressTrack} role="progressbar" aria-label="Tiến độ hoàn thiện tiêu chí" aria-valuemin={0} aria-valuemax={codes.length} aria-valuenow={ready}>
+          <div className={styles.progressNumbers}><strong>{String(ready).padStart(2,"0")}</strong><span>/ {String(requiredTotal).padStart(2,"0")} điều kiện nộp</span></div>
+          <div className={styles.progressTrack} role="progressbar" aria-label="Tiến độ hoàn thiện tiêu chí" aria-valuemin={0} aria-valuemax={requiredTotal} aria-valuenow={ready}>
             <span style={{width:percent+"%"}} />
           </div>
-          <p>{complete ? "Đã có đủ tệp cho các tiêu chí" : `Còn ${pending} tiêu chí cần bổ sung`}</p>
+          <p>{complete ? "Đã đáp ứng các điều kiện gửi hồ sơ" : `Còn ${pending} điều kiện cần hoàn thiện` }</p>
         </div>
       </header>
 
@@ -460,12 +467,9 @@ export function CriterionEvidenceForm({
             <label htmlFor="evidence-name">Họ và tên sinh viên <span>*</span></label>
             <input className="input" id="evidence-name" value={name} onChange={event => setName(event.target.value)} disabled={!!app || busy} required />
           </div>
-          {!app && individual && <div className={styles.field}>
-            <label htmlFor="evidence-birth">Ngày sinh <span>*</span></label>
-            <input className="input" id="evidence-birth" type="date" value={birthDate} onChange={event => setBirthDate(event.target.value)} disabled={busy} required />
-          </div>}
         </div>
         {!app && (studentId || accountEmail) && <div className={styles.identity}><ShieldCheck size={16} /><span>{studentId ? `MSSV ${studentId} · ` : ""}{accountEmail}</span><Check size={16} /></div>}
+        {!app && individual && <p className={styles.profileNote}>Ngày sinh được tự động lấy từ tài khoản đã đăng ký, không cần nhập lại.</p>}
         {individual && !app && <div className={styles.portrait}>
           <span className={styles.portraitIcon}><ImageIcon size={20} /></span>
           <div className={styles.portraitText}><strong>Ảnh chân dung <span>*</span></strong><small>JPG, PNG hoặc WebP · Tối đa 4 MB</small>{portrait && <span className={styles.portraitName}>{portrait.name}</span>}</div>
@@ -478,16 +482,16 @@ export function CriterionEvidenceForm({
       <section className={styles.evidenceSection} aria-labelledby="evidence-heading">
         <div className={styles.evidenceIntro}>
           <div><span className={styles.kicker}>02 — BẢNG KÊ MINH CHỨNG {individual ? "CÁ NHÂN" : "TẬP THỂ"}</span><h2 id="evidence-heading">{individual ? "Tiêu chí dành cho cá nhân" : "Tiêu chí dành cho tập thể"}</h2>
-            <p>Nhấn <strong>+ Thêm thông tin</strong> để kê khai từng hoạt động hoặc thành tích và đính kèm nhiều tài liệu. {individual && "Riêng C7–C9, bạn chỉ cần một tệp xác nhận cho mỗi tiêu chí."}</p></div>
+            <p>Nhấn <strong>+ Thêm thông tin</strong> ở những tiêu chí có thành tích và đính kèm tài liệu. {individual && "C1–C6 không cần nộp đủ; C7, C8 cần 01 tệp; C9 tích ô cam kết."}</p></div>
           <span className={styles.totalFiles}><Paperclip size={16} /> {fileCount} <span>/ 40 tệp</span></span>
         </div>
-        <div className={styles.notice}><CircleHelp size={18} /><span><strong>Hướng dẫn:</strong> PDF, JPG, PNG, WebP (tối đa 4 MB/tệp; 60 MiB/hồ sơ). {individual ? "C1–C6 cho phép nhiều thông tin và tệp; C7–C9 chỉ 01 mục, 01 tệp." : "T1–T6 là bộ tiêu chí tập thể dự thảo, cần phê duyệt trước khi vận hành chính thức. Có thể khai nhiều nội dung và tệp; không dùng thành tích riêng của thành viên thay cho tập thể."}</span></div>
+        <div className={styles.notice}><CircleHelp size={18} /><span><strong>Hướng dẫn:</strong> PDF, JPG, PNG, WebP (tối đa 4 MB/tệp; 60 MiB/hồ sơ). {individual ? "C1–C6 tự chọn các tiêu chí có thành tích (ít nhất một tiêu chí); C7–C8 bắt buộc 01 tệp/tiêu chí; C9 xác nhận bằng cam kết, không yêu cầu tải tệp." : "T1–T6 là bộ tiêu chí tập thể dự thảo, cần phê duyệt trước khi vận hành chính thức. Có thể khai nhiều nội dung và tệp; không dùng thành tích riêng của thành viên thay cho tập thể."}</span></div>
         {groups.map(group => (
           <div className={styles.group} key={group.number}>
             <div className={styles.groupHeading}>
               <span className={styles.groupIndex}>{group.number}</span>
               <div><h4>{group.title}</h4><p>{group.subtitle}</p></div>
-              <span className={styles.groupCount}>{group.codes.filter(code => filesFor(code).length + pendingFor(code).length > 0).length}/{group.codes.length} có minh chứng</span>
+              <span className={styles.groupCount}>{group.number === "B" && individual ? Number(hasEvidence("C7")) + Number(hasEvidence("C8")) + Number(disciplinaryCommitment) : group.codes.filter(hasEvidence).length}/{group.codes.length} {group.number === "B" && individual ? "điều kiện hoàn thành" : "tiêu chí đã kê khai"}</span>
             </div>
             <div className={styles.tableScroll} role="region" tabIndex={0} aria-label={"Bảng kê " + group.title}>
               <table className={styles.evidenceTable}>
@@ -508,13 +512,13 @@ export function CriterionEvidenceForm({
                   const unassigned = existing.filter(item => !item.evidence_entry_id);
                   const hasEvidence = total > 0;
                   const canAdd = !busy && total < criterionFileLimit(criterion) && fileCount < 40 &&
-                    (!isSingle(criterion) || currentEntries.length === 0);
+                    criterion !== "C9" && (!isSingle(criterion) || currentEntries.length === 0);
                   return <tr key={criterion} className={hasEvidence ? styles.rowReady : undefined}>
                     <td className={styles.criterionCell}>
                       <div className={styles.criterionMeta}>
                         <span className={styles.criterionCode}>{displayCode}</span>
                         <span className={`${styles.criterionState} ${hasEvidence ? styles.stateReady : ""}`}>
-                          {hasEvidence ? <><CheckCircle2 size={13} /> Đã có minh chứng</> : "Chưa có minh chứng"}
+                          {individual && criterion === "C9" ? (disciplinaryCommitment ? <><CheckCircle2 size={13} /> Đã cam kết</> : "Chưa cam kết") : hasEvidence ? <><CheckCircle2 size={13} /> Đã có minh chứng</> : "Chưa nộp (nếu có thành tích)"}
                         </span>
                       </div>
                       <strong>{definition.title}</strong>
@@ -528,7 +532,14 @@ export function CriterionEvidenceForm({
                       </details>
                     </td>
                     <td className={styles.informationCell}>
-                      <div className={styles.entryStack}>
+                      {individual && criterion === "C9" ? <div className={styles.commitmentBox}>
+                        <label className={styles.commitmentLabel} htmlFor="disciplinary-commitment">
+                          <input id="disciplinary-commitment" type="checkbox" checked={disciplinaryCommitment}
+                            onChange={event => setDisciplinaryCommitment(event.target.checked)} disabled={busy} />
+                          <span>Tôi cam kết trong năm học <strong>không bị kỷ luật từ mức khiển trách trở lên</strong> và <strong>không vi phạm quy định, quy chế Nhà trường</strong>. Tôi chịu trách nhiệm về tính trung thực của nội dung cam kết.</span>
+                        </label>
+                        <small>{disciplinaryCommitment ? "Đã xác nhận cam kết" : "Bắt buộc tích ô cam kết để gửi hồ sơ. Hội đồng có quyền đối chiếu thông tin."}</small>
+                      </div> : <div className={styles.entryStack}>
                         {currentEntries.map((entry, number) => {
                           const savedFiles = entryFiles(entry.id);
                           const queue = selected[entry.id] || [];
@@ -615,14 +626,14 @@ export function CriterionEvidenceForm({
                         </div>}
                         {currentEntries.length === 0 && unassigned.length === 0 &&
                           <div className={styles.emptyEvidence}><FilePlus2 size={18} /><span>Chưa có tài liệu nào.<small>{isSingle(criterion) ? "Chọn “Đính kèm 01 tệp” để bắt đầu." : "Chọn “Thêm thông tin” để bắt đầu."}</small></span></div>}
-                      </div>
+                      </div>}
                     </td>
-                    <td className={styles.plusCell}><button type="button" className={styles.plusAction}
+                    <td className={styles.plusCell}>{individual && criterion === "C9" ? <span className={styles.commitmentTag}>Cam kết</span> : <button type="button" className={styles.plusAction}
                       disabled={!canAdd} onClick={() => addEntry(criterion)}
                       aria-label={(isSingle(criterion) ? "Đính kèm 01 minh chứng cho " : "Thêm thông tin minh chứng cho ") + displayCode}
                       title={!canAdd ? "Đã đủ số lượng hoặc đang lưu" : isSingle(criterion) ? "Đính kèm 01 tệp" : "Khai thông tin minh chứng"}>
                       <Plus size={17} strokeWidth={2.25} aria-hidden="true" /><span>{isSingle(criterion) ? "Đính kèm 01 tệp" : "Thêm thông tin"}</span>
-                    </button></td>
+                    </button>}</td>
                   </tr>;
                 })}
                 </tbody>
@@ -653,7 +664,7 @@ export function CriterionEvidenceForm({
       {previewFile && <LocalFilePreview file={previewFile} onClose={() => setPreviewFile(null)} />}
       <div className={styles.actionBar} id="submission-actions">
         <div className={styles.actionStatus}><span className={complete ? styles.readyIcon : styles.pendingIcon}>{complete ? <Check size={18} /> : <Info size={18} />}</span>
-          <div><strong>{complete ? "Minh chứng đã đủ theo danh mục" : `Đã hoàn thiện ${ready}/${codes.length} tiêu chí`}</strong><small>{complete ? "Kiểm tra lại thông tin trước khi gửi hội đồng." : "Bạn có thể lưu nháp và tiếp tục vào lần sau."}</small></div>
+          <div><strong>{complete ? "Đã đủ điều kiện gửi hồ sơ" : `Đã hoàn thiện ${ready}/${requiredTotal} điều kiện nộp` }</strong><small>{complete ? "Kiểm tra cam kết và minh chứng trước khi gửi hội đồng." : "Nhóm A chỉ cần nộp những tiêu chí bạn có thành tích; nhóm B là bắt buộc."}</small></div>
         </div>
         <div className={styles.actionButtons}>
           <Button type="submit" variant="outline" disabled={busy} loading={busy && mode.current === "draft"} onClick={() => { mode.current = "draft"; }}><Save size={17} /> Lưu nháp</Button>

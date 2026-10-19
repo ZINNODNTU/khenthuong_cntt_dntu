@@ -159,6 +159,7 @@
 .field :is(input,select):not(:disabled):hover { border-color: var(--ledger-muted); }
 .field :is(input,select):disabled { opacity: .66; }
 .identity { display: flex; align-items: center; gap: 10px; padding: 13px 0 0; margin-top: 17px; font-size: 11px; color: var(--ledger-muted); border-top: 1px solid var(--ledger-border); }
+.profileNote { margin: 8px 0 0; font-size: 11px; line-height: 1.6; color: var(--ledger-muted); }
 .identity span { min-width: 0; overflow-wrap: anywhere; }
 .identity svg:first-child { color: var(--ledger-good); flex-shrink: 0; }
 .identity svg:last-child { color: var(--ledger-good); flex-shrink: 0; margin-left: auto; }
@@ -182,6 +183,12 @@
 .notice { display: flex; gap: 10px; align-items: flex-start; padding: 11px 15px; color: var(--ledger-muted); background: var(--ledger-wash); border-left: 2px solid var(--ledger-accent); border-radius: 0 3px 3px 0; font-size: 11px; line-height: 1.8; }
 .notice > svg { color: var(--ledger-accent); flex-shrink: 0; margin-top: 1px; }
 .notice strong { color: var(--ledger-ink); font-weight: 730; }
+.commitmentBox { border: 1px solid var(--ledger-border); border-radius: 5px; padding: 17px; background: var(--ledger-wash); }
+.commitmentLabel { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; font-size: 12px; line-height: 1.75; color: var(--ledger-ink); }
+.commitmentLabel input { flex: 0 0 19px; width: 19px; height: 19px; margin-top: 2px; accent-color: var(--ledger-good); cursor: pointer; }
+.commitmentLabel strong { font-weight: 740; }
+.commitmentBox small { display: block; margin-top: 9px; color: var(--ledger-muted); line-height: 1.6; }
+.commitmentTag { display: inline-block; font-size: 11px; font-weight: 730; color: var(--ledger-good); }
 .group { display: flex; flex-direction: column; gap: 14px; }
 .groupHeading { display: flex; align-items: center; gap: 17px; padding: 15px 0 5px; }
 .groupIndex { font-family: Georgia, "Times New Roman", serif; font-size: 34px; line-height: 1; color: var(--ledger-accent); min-width: 43px; }

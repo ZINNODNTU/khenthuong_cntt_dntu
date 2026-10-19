@@ -29,9 +29,14 @@ export function validateCriterionEvidence(
     : persistedCodes?.some(x => x.startsWith("T")) || categories.some(x => /^criterion_t[1-6]$/.test(x))
       ? collectiveCodes : oldCollectiveCodes;
   const issues: string[] = [];
+  if (type === "individual" && !individualCodes.slice(0, 6).some(code => categories.includes(criterionCategory(code)))) {
+    issues.push("Thành tích & đóng góp cá nhân: Cần nộp minh chứng cho ít nhất một tiêu chí C1–C6.");
+  }
   for (const code of codes) {
     const count = categories.filter(category => category === criterionCategory(code)).length;
-    if (count === 0) issues.push(`${code}: Cần tải lên ít nhất 01 minh chứng.`);
+    if (type === "individual" ? (code === "C7" || code === "C8") && count === 0 : count === 0) {
+      issues.push(`${code}: Cần tải lên ít nhất 01 minh chứng.`);
+    }
     if (count > criterionFileLimit(code)) issues.push(`${code}: Số minh chứng vượt giới hạn.`);
   }
   const foreign = categories.filter(category => {

@@ -44,6 +44,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       APPLICATION_NOT_ASSIGNED: "Hãy nhận xử lý hồ sơ trước khi xét tiêu chí.",
       APPLICATION_NOT_REVIEWABLE: "Hồ sơ không còn trong trạng thái được xét duyệt.",
       CRITERION_EVIDENCE_MISSING: "Tiêu chí chưa có minh chứng tải lên Google Drive.",
+      DISCIPLINARY_COMMITMENT_REQUIRED: "C9: Chưa có cam kết của sinh viên.",
       BINARY_REVIEW_ONLY: "Chỉ được xét Đạt hoặc Không đạt.",
       CRITERION_NOT_FOUND: "Tiêu chí chưa được khởi tạo. Hãy liên hệ quản trị viên.",
     };
