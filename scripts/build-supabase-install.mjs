@@ -11,6 +11,7 @@ const parts = [
   "07_EVIDENCE_ENTRIES.sql",
   "08_COLLECTIVE_CRITERIA_T.sql",
   "09_EVIDENCE_CONTENT_INTEGRITY.sql",
+  "09A_INDIVIDUAL_ONLY.sql",
   "10_OPTIONAL_PERSONAL_COMMITMENT.sql",
 ];
 const path = "supabase/database";

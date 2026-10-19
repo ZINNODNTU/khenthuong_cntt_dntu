@@ -55,4 +55,10 @@ order by p.proname;
 
 ## Trạng thái triển khai
 
-Migration đã được chuẩn bị, kiểm thử mã nguồn và có trong repository; **chỉ được xem là triển khai thành công khi có kết quả chạy trên Supabase project đúng và đã xác minh ở SQL Editor hoặc CLI**.
+**Đã triển khai trực tiếp ngày 19/10/2026** trên project `khenthuong_cntt_dntu` trong tổ chức `ZINNODNTU's Org` (đúng project ref trong `.env.local`). Supabase SQL Editor xác nhận giao dịch thành công cho:
+- `20261018190000_individual_award_only.sql`: tạo ba trigger chỉ nhận hồ sơ/tài khoản/đợt xét cá nhân mới, không xóa hồ sơ tập thể lịch sử.
+- `20261019220000_optional_personal_achievement_commitment.sql`: cập nhật ba hàm kiểm tra nộp/xét, áp dụng C1–C6 linh hoạt, C7/C8 có tệp, C9 tích cam kết.
+
+Đã kiểm tra hàm SQL sau triển khai bằng `pg_get_functiondef` (cả ba có dấu hiệu xử lý C9; hai hàm kiểm tra có điều kiện nhóm A) và đồng bộ cả hai version vào `supabase_migrations.schema_migrations` (đã truy vấn lại thấy đủ hai dòng). Định nghĩa ba hàm cũ được lưu tại bản backup nội bộ của máy triển khai để hoàn tác, **không phải backup toàn database**.
+
+**Còn cần nghiệm thu:** `SUPABASE_SECRET_KEY` chưa có trong môi trường local được kiểm tra trước đó; chưa chạy end-to-end có phiên đăng nhập sinh viên và reviewer thật, và chưa xác nhận các biến bí mật production/Vercel. Chưa khẳng định sản phẩm đã sẵn sàng nhận hồ sơ thật.
