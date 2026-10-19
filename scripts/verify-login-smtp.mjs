@@ -79,7 +79,7 @@ const emailTemplate = readFileSync(
 
 if (
   !emailTemplate.includes(
-    "{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}",
+    "{{ .ConfirmationURL }}",
   )
 ) {
   fail("Confirmation template has an invalid confirmation URL.");

@@ -11,7 +11,7 @@ NEXT_PUBLIC_SUPABASE_URL=https://PROJECT.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxx
 SUPABASE_SERVICE_ROLE_KEY=sb_secret_xxx
 
-PUBLIC_SIGNUP_ENABLED=false # Chỉ bật khi đã xác minh được quyền sở hữu MSSV và có chống lạm dụng
+PUBLIC_SIGNUP_ENABLED=true # Mở form đăng ký MSSV@dntu.edu.vn; chỉ bật khi email confirmation và SMTP hoạt động
 NEXT_PUBLIC_AUTH_EMAIL_SENDER_ADDRESS=email-xac-nhan@your-domain.example
 ALLOWED_REVIEWER_DOMAIN=dntu.edu.vn
 
@@ -25,9 +25,12 @@ MAX_IMAGE_SIZE_MB=4
 ```text
 https://YOUR_APP.vercel.app/auth/confirm
 https://YOUR_APP.vercel.app/auth/callback
+https://YOUR_APP.vercel.app/auth/finish
 ```
 
-6. Trong phần nhà cung cấp đăng nhập, chỉ bật Email; tắt Google.
+6. Trong phần nhà cung cấp đăng nhập, chỉ bật Email; tắt Google. Giữ bật xác nhận email để chặn đăng nhập trước khi xác minh. Đặt Site URL trong Supabase đúng tên miền HTTPS production, không để localhost.
+
+**Cập nhật cấu hình:** thay đổi `PUBLIC_SIGNUP_ENABLED` trên Vercel cần **deployment mới**; kiểm tra trang `/register` trên production thay vì chỉ dựa vào GitHub build. Nếu Supabase chưa có custom SMTP, email xác minh sinh viên có thể không được gửi. Mẫu email trong GitHub không tự đồng bộ vào Supabase Auth.
 7. Deploy Vercel.
 8. Tạo admin từ máy quản trị bằng `CREATE_USER_SUPABASE_CLI.ps1`.
 

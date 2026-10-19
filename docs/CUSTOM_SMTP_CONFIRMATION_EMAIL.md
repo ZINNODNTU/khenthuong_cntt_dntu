@@ -95,7 +95,7 @@ supabase/email-templates/confirm-signup.html
 Mẫu sử dụng đường dẫn:
 
 ```text
-{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/
+{{ .ConfirmationURL }}
 ```
 
 ## 5. Biến hiển thị trên giao diện
@@ -118,7 +118,7 @@ Các template mới trong repository:
 - Thiết kế dùng bảng HTML, CSS nội tuyến, tối ưu cho Gmail/Outlook và màn hình điện thoại, không cần tải hình từ máy chủ ngoài.
 
 Cấu hình tại Supabase Dashboard → **Authentication → Email Templates**:
-1. Chọn **Confirm signup**, dán tiêu đề từ file subject và toàn bộ HTML tương ứng. Mẫu xác nhận dùng `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`.
+1. Chọn **Confirm signup**, dán tiêu đề từ file subject và toàn bộ HTML tương ứng. Mẫu xác nhận dùng `{{ .ConfirmationURL }}`, để Supabase tự xác minh mã và chuyển hướng theo URL được cho phép; không phụ thuộc Site URL đang trỏ localhost.
 2. Chọn **Reset Password/Recovery**, dán tiêu đề và HTML từ các file recovery. Mẫu dùng `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=recovery`. Chỉ sử dụng token hash qua endpoint `/auth/confirm`, không gửi mật khẩu qua email.
 3. Cấu hình Authentication → **URL Configuration**: Site URL phải là **tên miền production thực tế**; thêm redirect `https://<TEN-MIEN-PRODUCTION>/auth/confirm` và `http://localhost:3000/auth/confirm`.
 4. Duy trì SMTP đã được chủ tài khoản email cấp quyền; kiểm tra SPF/DKIM/DMARC và Sender Name. Không dùng địa chỉ DNTU làm người gửi nếu SMTP không được cấp phép.
