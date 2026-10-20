@@ -25,6 +25,38 @@ test("Trang đăng nhập có quên mật khẩu và luồng yêu cầu email", 
   await expect(page.getByText("Vui lòng nhập MSSV hoặc địa chỉ email hợp lệ.")).toBeVisible();
 });
 
+test("Không báo đã gửi khi Supabase trả lỗi SMTP", async ({ page }) => {
+  await page.route("**/auth/v1/recover*", route =>
+    route.fulfill({
+      status: 500,
+      contentType: "application/json",
+      headers: { "access-control-allow-origin": "*" },
+      body: JSON.stringify({ code: "unexpected_failure", msg: "Error sending recovery email" }),
+    }),
+  );
+  await page.goto("/forgot-password");
+  await page.getByLabel("MSSV hoặc email đăng ký").fill("123456789@dntu.edu.vn");
+  await page.getByRole("button", { name: /Gửi liên kết khôi phục/ }).click();
+  await expect(page.getByText(/Hệ thống chưa tiếp nhận được yêu cầu khôi phục/)).toBeVisible();
+  await expect(page.getByRole("status")).toHaveCount(0);
+});
+
+test("Phản hồi thành công không khẳng định email đã phát tới hộp thư", async ({ page }) => {
+  await page.route("**/auth/v1/recover*", route =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      headers: { "access-control-allow-origin": "*" },
+      body: "{}",
+    }),
+  );
+  await page.goto("/forgot-password");
+  await page.getByLabel("MSSV hoặc email đăng ký").fill("123456789@dntu.edu.vn");
+  await page.getByRole("button", { name: /Gửi liên kết khôi phục/ }).click();
+  await expect(page.getByRole("status")).toContainText("Đã tiếp nhận yêu cầu");
+  await expect(page.getByRole("status")).toContainText("Nếu địa chỉ email thuộc tài khoản đã đăng ký");
+});
+
 test("Trang đặt lại mật khẩu không mở cho khách chưa xác thực", async ({ page }) => {
   await page.goto("/reset-password");
   await expect(page).toHaveURL(/\/forgot-password\?reason=expired/);

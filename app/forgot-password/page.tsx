@@ -28,12 +28,19 @@ export default function ForgotPasswordPage() {
       const { error: resultError } = await client.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth/confirm`,
       });
-      if (resultError && /rate limit|too many|over_email_send_rate_limit/i.test(resultError.message)) {
-        setError("Bạn đã yêu cầu quá nhiều lần. Vui lòng đợi trước khi thử lại.");
-      } else {
-        // Do not reveal whether the email is registered.
-        setSent(true);
+      if (resultError) {
+        // Never claim delivery when Supabase rejected the request, and never
+        // reveal whether an account exists for the submitted address.
+        const isRateLimited = resultError.status === 429 ||
+          /rate limit|too many|over_email_send_rate_limit/i.test(resultError.message);
+        setError(isRateLimited
+          ? "Hệ thống đang giới hạn số lần gửi email. Vui lòng chờ vài phút rồi thử lại."
+          : "Hệ thống chưa tiếp nhận được yêu cầu khôi phục. Dịch vụ email có thể đang gặp sự cố; vui lòng thử lại sau hoặc liên hệ quản trị.");
+        return;
       }
+      // HTTP success means the request was accepted, not that mail was
+      // delivered or that the email belongs to an existing account.
+      setSent(true);
     } catch {
       setError("Không kết nối được dịch vụ xác thực. Vui lòng thử lại sau.");
     } finally {
@@ -49,7 +56,11 @@ export default function ForgotPasswordPage() {
         <h1 className={styles.title} id="recovery-title">Quên mật khẩu?</h1>
         <p className={styles.description}>Nhập MSSV hoặc email đã đăng ký. Nếu tài khoản tồn tại, hệ thống sẽ gửi liên kết đặt lại mật khẩu vào hộp thư của bạn.</p>
         {sent ? (
-          <div role="status" className={styles.message}>Nếu email thuộc một tài khoản hợp lệ, hướng dẫn đặt lại mật khẩu đã được gửi. Hãy kiểm tra Hộp thư đến hoặc Spam. Liên kết có thời hạn và chỉ nên sử dụng một lần.</div>
+          <div role="status" className={styles.message}>
+            <strong>Đã tiếp nhận yêu cầu.</strong> Nếu địa chỉ email thuộc tài khoản đã đăng ký, hệ thống sẽ gửi liên kết đặt lại mật khẩu.
+            Kiểm tra Hộp thư đến, Spam và mục Tất cả thư, tìm thư từ “Đoàn – Hội Khoa CNTT DNTU”.
+            Nếu không nhận được sau vài phút, hãy kiểm tra lại email đăng ký hoặc liên hệ quản trị.
+          </div>
         ) : (
           <form className={styles.form} onSubmit={requestReset}>
             {error && <div role="alert" className={styles.error}>{error}</div>}
