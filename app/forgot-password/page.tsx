@@ -26,7 +26,7 @@ export default function ForgotPasswordPage() {
     try {
       const client = createClient();
       const { error: resultError } = await client.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/confirm`,
+        redirectTo: `${window.location.origin}/auth/finish?mode=recovery`,
       });
       if (resultError) {
         // Never claim delivery when Supabase rejected the request, and never

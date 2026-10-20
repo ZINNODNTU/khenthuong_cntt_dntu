@@ -57,6 +57,12 @@ test("Phản hồi thành công không khẳng định email đã phát tới h�
   await expect(page.getByRole("status")).toContainText("Nếu địa chỉ email thuộc tài khoản đã đăng ký");
 });
 
+test("Callback quên mật khẩu không mở biểu mẫu khi thiếu phiên hợp lệ", async ({ page }) => {
+  await page.goto("/auth/finish?mode=recovery");
+  await expect(page.getByRole("heading", { name: "Liên kết không hợp lệ hoặc đã hết hạn" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Yêu cầu liên kết mới/ })).toHaveAttribute("href", "/forgot-password");
+});
+
 test("Trang đặt lại mật khẩu không mở cho khách chưa xác thực", async ({ page }) => {
   await page.goto("/reset-password");
   await expect(page).toHaveURL(/\/forgot-password\?reason=expired/);

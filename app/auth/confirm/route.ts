@@ -32,7 +32,7 @@ export async function GET(request: Request) {
 
   if (!tokenHash || !type) {
     return NextResponse.redirect(
-      new URL("/?error=callback", url.origin),
+      new URL("/auth/finish?error=invalid_link", url.origin),
     );
   }
 
@@ -45,7 +45,7 @@ export async function GET(request: Request) {
 
   if (error) {
     return NextResponse.redirect(
-      new URL("/?error=callback", url.origin),
+      new URL("/auth/finish?error=invalid_link", url.origin),
     );
   }
 

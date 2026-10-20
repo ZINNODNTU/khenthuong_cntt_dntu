@@ -77,23 +77,24 @@ const emailTemplate = readFileSync(
   "utf8",
 );
 
-if (
-  !emailTemplate.includes(
-    "{{ .ConfirmationURL }}",
-  )
-) {
-  fail("Confirmation template has an invalid confirmation URL.");
+if (!emailTemplate.includes('href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email"')) {
+  fail("Signup email must use the server-side token_hash confirmation route.");
 }
 
 const recoveryTemplate = readFileSync(
   resolve(process.cwd(), "supabase/email-templates/recovery.html"),
   "utf8",
 );
-if (
-  !recoveryTemplate.includes("{{ .RedirectTo }}?token_hash={{ .TokenHash }}") ||
-  !recoveryTemplate.includes("type=recovery")
-) {
-  fail("Recovery email must link to the configured redirect and use a recovery token hash.");
+if (!recoveryTemplate.includes('href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=recovery"')) {
+  fail("Recovery email must verify token_hash on the server before password reset.");
+}
+const recoveryFinish = readFileSync(
+  resolve(process.cwd(), "app/auth/finish/page.tsx"),
+  "utf8",
+);
+if (!recoveryFinish.includes('query.get("mode") === "recovery"')
+  || !recoveryFinish.includes('router.replace("/reset-password")')) {
+  fail("Browser callback must consume recovery session and route to reset form.");
 }
 for (const [name, markup, buttonLabel] of [
   ["confirmation", emailTemplate, "XÁC NHẬN EMAIL"],

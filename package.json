@@ -20,6 +20,7 @@
     "ui:self-check": "node scripts/ui-self-check.mjs",
     "ui:verify": "node scripts/verify-modern-ui.mjs",
     "auth:verify": "node scripts/verify-login-smtp.mjs",
+    "auth:templates:check": "node scripts/publish-supabase-email-templates.mjs --check",
     "auth:uniqueness:verify": "node scripts/verify-student-account-uniqueness.mjs",
     "auth:duplicates:audit": "node scripts/audit-duplicate-student-accounts.mjs",
     "ui:audit": "playwright test tests/ui-audit.spec.ts",

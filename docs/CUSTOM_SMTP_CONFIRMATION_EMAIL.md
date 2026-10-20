@@ -95,7 +95,7 @@ supabase/email-templates/confirm-signup.html
 Mẫu sử dụng đường dẫn:
 
 ```text
-{{ .ConfirmationURL }}
+{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email
 ```
 
 ## 5. Biến hiển thị trên giao diện
@@ -118,13 +118,23 @@ Các template mới trong repository:
 - Thiết kế dùng bảng HTML, CSS nội tuyến, tối ưu cho Gmail/Outlook và màn hình điện thoại, không cần tải hình từ máy chủ ngoài.
 
 Cấu hình tại Supabase Dashboard → **Authentication → Email Templates**:
-1. Chọn **Confirm signup**, dán tiêu đề từ file subject và toàn bộ HTML tương ứng. Mẫu xác nhận dùng `{{ .ConfirmationURL }}`, để Supabase tự xác minh mã và chuyển hướng theo URL được cho phép; không phụ thuộc Site URL đang trỏ localhost.
-2. Chọn **Reset Password/Recovery**, dán tiêu đề và HTML từ các file recovery. Mẫu dùng `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=recovery`. Chỉ sử dụng token hash qua endpoint `/auth/confirm`, không gửi mật khẩu qua email.
+1. Chọn **Confirm signup**, dán tiêu đề từ file subject và HTML tương ứng. Mẫu dùng `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`; server xác minh OTP và đặt session cookie. **Site URL phải đúng tên miền production, tuyệt đối không để localhost**.
+2. Chọn **Reset Password/Recovery**, dán tiêu đề và HTML từ các file recovery. Mẫu dùng `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery`. Server xác thực rồi chuyển thẳng `/reset-password`. `/auth/finish?mode=recovery` vẫn hỗ trợ các email cũ chưa đổi template. Không gửi mật khẩu qua email.
 3. Cấu hình Authentication → **URL Configuration**: Site URL phải là **tên miền production thực tế**; thêm redirect `https://<TEN-MIEN-PRODUCTION>/auth/confirm` và `http://localhost:3000/auth/confirm`.
 4. Duy trì SMTP đã được chủ tài khoản email cấp quyền; kiểm tra SPF/DKIM/DMARC và Sender Name. Không dùng địa chỉ DNTU làm người gửi nếu SMTP không được cấp phép.
 5. Mở trang `/forgot-password` từ trang đăng nhập; nhập MSSV/email; dùng **tài khoản thử** và hộp thư thuộc quyền sở hữu để kiểm tra. Liên kết xác minh chuyển tới `/reset-password`; nhập mật khẩu mới đủ 12 ký tự, sau đó đăng nhập lại.
 
-**Quan trọng:** Push GitHub và `vercel deploy` không tự cập nhật template của Supabase Auth đã chạy trên cloud. Việc cập nhật template bắt buộc thực hiện trong Supabase Dashboard hoặc API quản lý có quyền phù hợp. Không sử dụng SQL migration để thay thế email Auth.
+**Quan trọng:** Push GitHub và Vercel deploy không tự cập nhật template của Supabase Auth trên cloud. Việc cập nhật template bắt buộc thực hiện trong Supabase Dashboard hoặc Management API có quyền quản trị. Không dùng SQL migration để thay thế email Auth.
+
+### Xuất bản hai template qua Supabase Management API
+
+1. Chạy `pnpm run auth:templates:check` để kiểm tra cú pháp, HTML và URL xác minh mà **không thay đổi** Supabase.
+2. Nếu có Supabase Personal Access Token với quyền `auth_config_write`/`project_admin_write`, cung cấp token qua biến môi trường `SUPABASE_ACCESS_TOKEN` trên máy quản trị (không commit, không dán token vào chat).
+3. Chạy `node scripts/publish-supabase-email-templates.mjs --apply --project-ref nzoamsyazdafyqnsxkny` để cập nhật **chỉ** subject + HTML của Confirm signup và Reset password. Lệnh không sửa cấu hình SMTP.
+4. Kiểm tra lại Authentication → Emails → Templates, sau đó dùng email thử thuộc quyền sở hữu để kiểm tra Inbox/Spam và đường dẫn `/auth/confirm` → `/reset-password`.
+5. Xóa biến môi trường token sau khi hoàn tất, và kiểm tra Supabase Auth Logs nếu yêu cầu gửi email thành công nhưng không nhận được.
+
+**Chú ý:** Mẫu dùng `{{ .SiteURL }}`, bắt buộc kiểm tra Site URL đang trỏ `https://khenthuong-cntt-dntu.vercel.app` trong Supabase trước khi publish.
 
 ## 6. Kiểm tra
 
