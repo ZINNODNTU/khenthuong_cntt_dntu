@@ -95,6 +95,21 @@ if (
 ) {
   fail("Recovery email must link to the configured redirect and use a recovery token hash.");
 }
+for (const [name, markup, buttonLabel] of [
+  ["confirmation", emailTemplate, "XÁC NHẬN EMAIL"],
+  ["recovery", recoveryTemplate, "THIẾT LẬP MẬT KHẨU MỚI"],
+]) {
+  if (!markup.includes('lang="vi"') || !markup.includes('role="presentation"')
+    || !markup.includes("KHOA CÔNG NGHỆ THÔNG TIN")
+    || !markup.includes("background-color:#173751")
+    || !markup.includes(buttonLabel)) {
+    fail(`${name} template is missing accessible DNTU styling or a clear action.`);
+  }
+  if (/<script\b|<img\b|http:\/\//i.test(markup)) {
+    fail(`${name} template contains scripts, remote images, or insecure HTTP URLs.`);
+  }
+}
+
 const forgotPage = readFileSync(
   resolve(process.cwd(), "app/forgot-password/page.tsx"),
   "utf8",
