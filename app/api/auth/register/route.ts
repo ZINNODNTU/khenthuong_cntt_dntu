@@ -71,6 +71,9 @@ export async function POST(request: Request) {
     if (/rate limit|too many|over_email_send_rate_limit/i.test(msg)) {
       return respond({ error: "Dịch vụ email đang giới hạn tần suất gửi. Vui lòng thử lại sau." }, 429);
     }
+    if ((error?.status || 0) >= 500 || /smtp|sending (?:confirmation |recovery )?email|email provider|email delivery/i.test(msg)) {
+      return respond({ error: "Hệ thống chưa gửi được email xác nhận. Dịch vụ thư có thể đang gặp sự cố; vui lòng thử lại sau hoặc liên hệ quản trị." }, 503);
+    }
     if (/branch|chi đoàn|inactive|student_account/i.test(msg)) {
       return respond({ error: "Email sinh viên hoặc Chi đoàn không hợp lệ, hoặc đã có tài khoản." }, 400);
     }

@@ -175,7 +175,7 @@ function LoginFormInner({ signupEnabled, loginQuery }: { signupEnabled: boolean;
           </div>
         </div>
 
-        <div className={styles.recoveryRow}><Link href="/forgot-password" prefetch={false}>Quên mật khẩu?</Link></div>
+        <div className={styles.recoveryRow}><Link href="/resend-confirmation" prefetch={false}>Gửi lại thư xác nhận</Link><Link href="/forgot-password" prefetch={false}>Quên mật khẩu?</Link></div>
         <button className={styles.submit} type="submit" disabled={loading} aria-busy={loading}>
           {loading ? (
             <><span className={styles.spinner} aria-hidden="true" /> Đang xác thực...</>

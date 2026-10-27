@@ -118,6 +118,10 @@ export function LoginForm({ signupEnabled }: { signupEnabled: boolean }) {
           <Link href="/register">Đăng ký bằng MSSV</Link>
         </div>
       )}
+      <div className="login-footer">
+        Chưa nhận được thư kích hoạt?{" "}
+        <Link href="/resend-confirmation">Gửi lại email xác nhận</Link>
+      </div>
     </div>
   );
 }

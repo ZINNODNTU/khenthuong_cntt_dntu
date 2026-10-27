@@ -12,6 +12,7 @@ export default function EmailVerificationFinish() {
   const router = useRouter();
   const [failed, setFailed] = useState(false);
   const [checkingRecovery, setCheckingRecovery] = useState(false);
+  const [expiredSignup, setExpiredSignup] = useState(false);
 
   useEffect(() => {
     // Default Supabase Auth email links may land with PKCE code or tokens.
@@ -57,6 +58,10 @@ export default function EmailVerificationFinish() {
     }
 
     setFailed(hasError);
+    setExpiredSignup(hasError && query.get("flow") === "signup");
+    // Leave an error-link URL intact: replacing Next.js navigation state here
+    // can remount this client page before React commits the feedback state.
+    if (hasError) return;
     if (window.location.hash || window.location.search) {
       window.history.replaceState(null, "", "/auth/finish");
     }
@@ -77,7 +82,7 @@ export default function EmailVerificationFinish() {
               : "Supabase đã xử lý liên kết từ email trường. Hãy đăng nhập để kiểm tra tài khoản và hoàn thiện hồ sơ."}
         </p>
         {!failed && !checkingRecovery && <div className={styles.hint}><CheckCircle2 size={18} /> Hệ thống sẽ chỉ cho vào khu vực xét thưởng khi email được xác minh và thông tin sinh viên đầy đủ.</div>}
-        {!checkingRecovery && <Link className={styles.action} href={failed ? "/forgot-password" : "/login"}>{failed ? "Yêu cầu liên kết mới" : "Đến trang đăng nhập"} <ArrowRight size={19} /></Link>}
+        {!checkingRecovery && <Link className={styles.action} href={failed ? (expiredSignup ? "/resend-confirmation" : "/forgot-password") : "/login"}>{failed ? (expiredSignup ? "Gửi lại email xác nhận" : "Yêu cầu liên kết mới") : "Đến trang đăng nhập"} <ArrowRight size={19} /></Link>}
       </section>
     </main>
   );

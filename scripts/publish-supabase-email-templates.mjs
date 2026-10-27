@@ -1,25 +1,31 @@
 /**
- * Publish the two maintained Supabase Auth email templates.
+ * Validate and publish Supabase Auth email templates without exposing credentials.
  *
- * Usage:
- *   node scripts/publish-supabase-email-templates.mjs --check
- *   node scripts/publish-supabase-email-templates.mjs --apply --project-ref nzoamsyazdafyqnsxkny
+ * pnpm run auth:templates:check                   # Local only
+ * node scripts/publish-supabase-email-templates.mjs --verify-remote --project-ref <20-char ref>
+ * node scripts/publish-supabase-email-templates.mjs --apply --project-ref <20-char ref>
  *
- * Only --apply makes a remote change. SUPABASE_ACCESS_TOKEN must be provided
- * as a process environment variable, never stored in the repository.
+ * Remote modes require SUPABASE_ACCESS_TOKEN in the process environment.
+ * Only confirmation/recovery template subject and HTML are ever modified.
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const args = process.argv.slice(2);
-const applied = args.includes("--apply");
+const operation = args.includes("--apply") ? "apply" : args.includes("--verify-remote") ? "verify-remote" : "check";
+const options = ["--apply", "--verify-remote", "--check"].filter(option => args.includes(option));
 const refIndex = args.indexOf("--project-ref");
 const projectRef = refIndex >= 0 ? args[refIndex + 1] : "";
-if (args.some((arg, i) => !["--apply", "--check", "--project-ref"].includes(arg) && (refIndex < 0 || i !== refIndex + 1)) ||
-    (refIndex >= 0 && (!projectRef || !/^[a-z0-9]{20}$/.test(projectRef)))) {
-  console.error("Usage: node scripts/publish-supabase-email-templates.mjs [--check | --apply --project-ref <ref>]");
+const validArgs = args.every((arg, index) =>
+  ["--check", "--apply", "--verify-remote", "--project-ref"].includes(arg) ||
+  (index === refIndex + 1 && /^[a-z0-9]{20}$/.test(arg)));
+if (!validArgs || options.length > 1 ||
+    (refIndex >= 0 && !/^[a-z0-9]{20}$/.test(projectRef)) ||
+    (operation !== "check" && !projectRef)) {
+  console.error("Usage: node scripts/publish-supabase-email-templates.mjs --check | (--verify-remote | --apply) --project-ref <ref>");
   process.exit(2);
 }
+
 const templates = [
   { name: "confirmation", subject: "confirm-signup-subject.txt", html: "confirm-signup.html", type: "email" },
   { name: "recovery", subject: "recovery-subject.txt", html: "recovery.html", type: "recovery" },
@@ -32,44 +38,64 @@ for (const template of templates) {
   const expected = `href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=${template.type}"`;
   if (!subject || subject.length > 180 || !html.includes(expected) ||
       !html.includes('lang="vi"') || !html.includes('role="presentation"') ||
-      /<script\\b|<img\\b|http:\/\//i.test(html)) {
+      /<script\b|<img\b|http:\/\//i.test(html)) {
     console.error(`Template ${template.name} did not pass preflight checks.`);
     process.exit(1);
   }
   body[`mailer_subjects_${template.name}`] = subject;
   body[`mailer_templates_${template.name}_content`] = html;
 }
-console.log("Email templates: confirmation and recovery validated.");
-if (!applied) {
-  console.log("Dry run only; Supabase was not modified. Use --apply --project-ref <ref> to publish.");
+console.log("Validated local confirmation and recovery templates; no secrets printed.");
+if (operation === "check") {
+  console.log("Read-only local check complete. Supabase cloud settings are not checked.");
   process.exit(0);
 }
-if (!projectRef) {
-  console.error("An explicit --project-ref is required for production changes.");
-  process.exit(2);
-}
+
 const token = process.env.SUPABASE_ACCESS_TOKEN;
 if (!token) {
-  console.error("SUPABASE_ACCESS_TOKEN is not set; no production changes were made.");
+  console.error("SUPABASE_ACCESS_TOKEN is not configured in this process; no remote changes were made.");
   process.exit(2);
 }
-try {
-  const result = await fetch(`https://api.supabase.com/v1/projects/${projectRef}/config/auth`, {
-    method: "PATCH",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(30000),
+const endpoint = `https://api.supabase.com/v1/projects/${projectRef}/config/auth`;
+const headers = { Authorization: `Bearer ${token}`, Accept: "application/json" };
+
+async function request(method, payload) {
+  const response = await fetch(endpoint, {
+    method,
+    headers: payload ? { ...headers, "Content-Type": "application/json" } : headers,
+    body: payload ? JSON.stringify(payload) : undefined,
+    signal: AbortSignal.timeout(20000),
+    cache: "no-store",
   });
-  if (!result.ok) {
-    console.error(`Supabase Management API returned HTTP ${result.status}; no success is assumed. Check token permissions (auth_config_write/project_admin_write) and project ref.`);
+  if (!response.ok) {
+    throw new Error(`Management API returned HTTP ${response.status}; inspect permissions/project reference in Supabase Dashboard.`);
+  }
+  return response.json().catch(() => ({}));
+}
+
+try {
+  // Verify the project Site URL before updating links that use {{ .SiteURL }}.
+  const current = await request("GET");
+  const expectedSite = "https://khenthuong-cntt-dntu.vercel.app";
+  if ((current.site_url || "").replace(/\/$/, "") !== expectedSite) {
+    console.error("Site URL does not match the production domain. Update Authentication → URL Configuration first. No templates were changed.");
     process.exit(1);
   }
-  console.log(`Published confirmation and recovery Auth email templates to project ${projectRef}. No SMTP settings were changed.`);
+  if (operation === "apply") {
+    await request("PATCH", body);
+    console.log(`Published only confirmation/recovery HTML + subjects for project ${projectRef}.`);
+  }
+  const published = operation === "apply" ? await request("GET") : current;
+  const mismatched = Object.keys(body).filter(key => published[key] !== body[key]);
+  console.log(`Remote auth templates: ${mismatched.length ? "NOT SYNCHRONIZED" : "MATCH LOCAL FILES"}.`);
+  console.log(`Site URL: production domain verified. Confirm email: ${published.mailer_autoconfirm === false ? "REQUIRED" : "verify setting manually"}.`);
+  const smtpFields = ["smtp_host", "smtp_port", "smtp_user", "smtp_admin_email"];
+  console.log(`SMTP configuration visibility: ${smtpFields.every(field => Boolean(published[field])) ? "essential fields present" : "at least one field not exposed or unset"}; delivery is NOT proven.`);
+  if (mismatched.length) {
+    console.error(`Mismatched template fields: ${mismatched.join(", ")}.`);
+    process.exitCode = 1;
+  }
 } catch (error) {
-  console.error(`Could not reach Supabase Management API (${error?.name || "request failed"}).`);
-  process.exit(1);
+  console.error(`Unable to inspect/update Auth config: ${error instanceof Error ? error.message : "unknown error"}`);
+  process.exitCode = 1;
 }

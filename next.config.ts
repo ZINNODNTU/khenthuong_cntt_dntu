@@ -17,6 +17,10 @@ const nextConfig: NextConfig = {
         { key: "Cross-Origin-Resource-Policy", value: "same-site" },
         ...(process.env.NODE_ENV === "production" ? [{ key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" }] : []),
       ],
+    }, {
+      // Email links carry one-time token hashes; never leak them in Referer headers.
+      source: "/auth/confirm",
+      headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
     }];
   },
 };

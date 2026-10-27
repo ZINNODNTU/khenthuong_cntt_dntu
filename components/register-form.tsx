@@ -64,8 +64,9 @@ export function RegisterForm({
     <div className={styles.successBox} role="status">
       <CheckCircle2 size={40} aria-hidden="true" />
       <h3>Kiểm tra email trường của bạn</h3>
-      <p>Chúng tôi đã gửi liên kết xác nhận tới <strong>{registeredEmail}</strong>. Nhấn vào liên kết trong email để kích hoạt tài khoản trước khi đăng nhập.</p>
+      <p>Yêu cầu đăng ký cho <strong>{registeredEmail}</strong> đã được tiếp nhận. Nếu email được gửi thành công, hãy nhấn liên kết xác nhận trong thư để kích hoạt tài khoản.</p>
       <p>Không thấy thư? Hãy kiểm tra Spam hoặc mục Quảng cáo{senderAddress ? ` (thư gửi từ ${senderAddress})` : ""}.</p>
+      <p><Link href="/resend-confirmation">Gửi lại email xác nhận</Link> nếu thư chưa đến hoặc liên kết đã hết hạn.</p>
       <Link className={styles.backButton} href="/login">Quay về đăng nhập <ArrowRight size={17} /></Link>
     </div>
   );

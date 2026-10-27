@@ -73,6 +73,7 @@ export default function ForgotPasswordPage() {
           </form>
         )}
         <Link href="/login" className={styles.back}><ArrowLeft size={17} /> Quay về đăng nhập</Link>
+        <div><Link href="/resend-confirmation" className={styles.back}>Chưa xác nhận email? Gửi lại thư kích hoạt</Link></div>
       </section>
     </main>
   );
