@@ -11,7 +11,8 @@ export async function requestAuthEmail(
       body: JSON.stringify({ purpose, email }),
       credentials: "same-origin",
       cache: "no-store",
-      signal: AbortSignal.timeout(20000),
+      // Allow server-side SMTP submission to complete without client abort.
+      signal: AbortSignal.timeout(40000),
     });
     if (response.ok) return { ok: true };
     const body = await response.json().catch(() => ({})) as { code?: string; error?: string };
@@ -28,9 +29,9 @@ export async function requestAuthEmail(
         message: "MSSV hoặc địa chỉ email không hợp lệ." };
     }
     return { ok: false, code: String(body.code || "SERVICE_ERROR"),
-      message: "Dịch vụ gửi email chưa khả dụng. Vui lòng thử lại sau hoặc liên hệ quản trị." };
+      message: "Chưa xác nhận được kết quả gửi email. Hãy kiểm tra Hộp thư đến và Spam trước khi yêu cầu lại; nếu không thấy thư, liên hệ quản trị." };
   } catch {
     return { ok: false, code: "NETWORK_ERROR",
-      message: "Không thể kết nối website để gửi yêu cầu. Hãy kiểm tra mạng và thử lại." };
+      message: "Không thể xác nhận yêu cầu đã hoàn tất. Email vẫn có thể đã được gửi; hãy kiểm tra hộp thư trước khi gửi lại." };
   }
 }

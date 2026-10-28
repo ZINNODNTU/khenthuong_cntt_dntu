@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { ArrowLeft, ArrowRight, Mail } from "lucide-react";
 import { BrandLogo } from "@/components/brand-logo";
 import { requestAuthEmail } from "@/lib/auth-email-client";
@@ -12,6 +12,14 @@ export default function ForgotPasswordPage() {
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
+  const [pendingSeconds, setPendingSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!busy) { return; }
+    const started = Date.now();
+    const timer = window.setInterval(() => setPendingSeconds(Math.floor((Date.now() - started) / 1000)), 1000);
+    return () => window.clearInterval(timer);
+  }, [busy]);
 
   async function requestReset(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -21,6 +29,7 @@ export default function ForgotPasswordPage() {
       setError("Vui lòng nhập MSSV hoặc địa chỉ email hợp lệ.");
       return;
     }
+    setPendingSeconds(0);
     setBusy(true);
     setError("");
     try {
@@ -60,7 +69,12 @@ export default function ForgotPasswordPage() {
               <input id="recovery-email" name="email" type="text" autoComplete="username" autoCapitalize="none" spellCheck={false} required maxLength={254} placeholder="1822040304 hoặc email@dntu.edu.vn" disabled={busy} />
               <span className={styles.hint}>Sử dụng đúng email có quyền truy cập để nhận liên kết bảo mật.</span>
             </div>
-            <button className={styles.button} disabled={busy} type="submit"><Mail size={18} /> {busy ? "Đang xử lý..." : "Gửi liên kết khôi phục"} <ArrowRight size={17} /></button>
+            <button className={styles.button} disabled={busy} type="submit"><Mail size={18} /> {busy ? "Đang yêu cầu gửi thư..." : "Gửi liên kết khôi phục"} <ArrowRight size={17} /></button>
+            {busy && <p className={styles.hint} role="status" aria-live="polite">{pendingSeconds >= 12
+              ? "Dịch vụ email đang phản hồi chậm. Không đóng trang hoặc gửi yêu cầu khác; thư có thể đến trước khi hệ thống xác nhận."
+              : pendingSeconds >= 4
+                ? "Đang kết nối máy chủ gửi email. Vui lòng không bấm gửi nhiều lần."
+                : "Đã chuyển yêu cầu tới website. Đang chờ Supabase xác nhận..."}</p>}
           </form>
         )}
         <Link href="/login" className={styles.back}><ArrowLeft size={17} /> Quay về đăng nhập</Link>

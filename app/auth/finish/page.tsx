@@ -13,6 +13,7 @@ export default function EmailVerificationFinish() {
   const [failed, setFailed] = useState(false);
   const [checkingRecovery, setCheckingRecovery] = useState(false);
   const [expiredSignup, setExpiredSignup] = useState(false);
+  const [failureKind, setFailureKind] = useState<"invalid" | "expired" | "unavailable">("invalid");
 
   useEffect(() => {
     // Default Supabase Auth email links may land with PKCE code or tokens.
@@ -59,6 +60,10 @@ export default function EmailVerificationFinish() {
 
     setFailed(hasError);
     setExpiredSignup(hasError && query.get("flow") === "signup");
+    if (hasError) {
+      setFailureKind(query.get("error") === "verification_unavailable" ? "unavailable" :
+        query.get("error") === "expired_link" || fragment.get("error_code") === "otp_expired" ? "expired" : "invalid");
+    }
     // Leave an error-link URL intact: replacing Next.js navigation state here
     // can remount this client page before React commits the feedback state.
     if (hasError) return;
@@ -73,10 +78,12 @@ export default function EmailVerificationFinish() {
         <div className={styles.icon}>
           {failed ? <AlertTriangle size={35} /> : <MailCheck size={37} />}
         </div>
-        <h1>{checkingRecovery ? "Đang xác minh liên kết" : failed ? "Liên kết không hợp lệ hoặc đã hết hạn" : "Đã mở liên kết xác nhận"}</h1>
+        <h1>{checkingRecovery ? "Đang xác minh liên kết" : failed ? (failureKind === "unavailable" ? "Chưa thể xác minh liên kết" : "Liên kết không còn hiệu lực") : "Đã mở liên kết xác nhận"}</h1>
         <p>
           {failed
-            ? "Liên kết có thể đã hết hạn hoặc đã được sử dụng. Hãy yêu cầu email mới hoặc liên hệ quản trị để được hỗ trợ."
+            ? (failureKind === "unavailable"
+              ? "Dịch vụ xác thực đang phản hồi chậm hoặc tạm thời không khả dụng. Không yêu cầu gửi thư liên tục; hãy thử lại liên kết mới nhất sau ít phút."
+              : "Mỗi liên kết chỉ dùng được một lần. Nếu bạn gửi nhiều yêu cầu, hãy dùng email mới nhất trong Hộp thư đến; các liên kết cũ có thể không còn hiệu lực. Nếu vẫn lỗi, hãy yêu cầu một thư mới.")
             : checkingRecovery
               ? "Hệ thống đang kiểm tra phiên khôi phục mật khẩu và chuyển đến trang đặt mật khẩu mới."
               : "Supabase đã xử lý liên kết từ email trường. Hãy đăng nhập để kiểm tra tài khoản và hoàn thiện hồ sơ."}

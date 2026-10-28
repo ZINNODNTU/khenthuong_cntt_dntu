@@ -37,7 +37,7 @@ test("Không báo đã gửi khi Supabase trả lỗi SMTP", async ({ page }) =>
   await page.goto("/forgot-password");
   await page.getByLabel("MSSV hoặc email đăng ký").fill("123456789@dntu.edu.vn");
   await page.getByRole("button", { name: /Gửi liên kết khôi phục/ }).click();
-  await expect(page.getByText(/Dịch vụ gửi email chưa khả dụng/)).toBeVisible();
+  await expect(page.getByText(/Chưa xác nhận được kết quả gửi email/)).toBeVisible();
   await expect(page.getByRole("status")).toHaveCount(0);
 });
 
@@ -59,7 +59,7 @@ test("Phản hồi thành công không khẳng định email đã phát tới h�
 
 test("Callback quên mật khẩu không mở biểu mẫu khi thiếu phiên hợp lệ", async ({ page }) => {
   await page.goto("/auth/finish?mode=recovery");
-  await expect(page.getByRole("heading", { name: "Liên kết không hợp lệ hoặc đã hết hạn" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Liên kết không còn hiệu lực" })).toBeVisible();
   await expect(page.getByRole("link", { name: /Yêu cầu liên kết mới/ })).toHaveAttribute("href", "/forgot-password");
 });
 

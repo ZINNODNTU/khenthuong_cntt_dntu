@@ -76,6 +76,7 @@ export async function POST(request: Request) {
   const endpoint = new URL(mode === "recovery" ? "/auth/v1/recover" : "/auth/v1/resend", env.supabaseUrl());
   endpoint.searchParams.set("redirect_to", redirectTo.toString());
 
+  const upstreamStart = performance.now();
   try {
     const response = await fetch(endpoint, {
       method: "POST",
@@ -86,8 +87,10 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify(mode === "recovery" ? { email } : { type: "signup", email }),
       cache: "no-store",
-      signal: AbortSignal.timeout(15000),
+      // SMTP can be slow: avoid aborting a request after email delivery started.
+      signal: AbortSignal.timeout(35000),
     });
+    console.info("[auth.email.timing]", { purpose: mode, status: response.status, durationMs: Math.round(performance.now() - upstreamStart) });
     if (response.ok) {
       // A successful API request does not prove an email arrived or an account exists.
       return respond(200, "ACCEPTED");
@@ -114,7 +117,7 @@ export async function POST(request: Request) {
     return respond(503, "UPSTREAM_EMAIL_FAILED",
       "Dịch vụ gửi thư đang gặp sự cố. Vui lòng thử lại sau hoặc liên hệ quản trị.");
   } catch (error) {
-    console.error("[auth.email.network]", { purpose: mode, reason: error instanceof Error ? error.name : "unknown" });
+    console.error("[auth.email.network]", { purpose: mode, reason: error instanceof Error ? error.name : "unknown", durationMs: Math.round(performance.now() - upstreamStart) });
     return respond(503, "AUTH_UPSTREAM_UNREACHABLE",
       "Hệ thống tạm thời không kết nối được dịch vụ gửi thư. Vui lòng thử lại sau.");
   }
