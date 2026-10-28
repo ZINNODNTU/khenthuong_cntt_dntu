@@ -13,7 +13,13 @@ function enabled(name: string, fallback = true): boolean {
   return !["0", "false", "off", "no"].includes(value.toLowerCase());
 }
 export const env = {
-  appUrl: () => process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  appUrl: () => {
+    const configured = process.env.NEXT_PUBLIC_APP_URL?.trim();
+    if (process.env.NODE_ENV === "production" && (!configured || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/i.test(configured))) {
+      return "https://khenthuong-cntt-dntu.vercel.app";
+    }
+    return configured || "http://localhost:3000";
+  },
   supabaseUrl: () => required("NEXT_PUBLIC_SUPABASE_URL"),
   supabasePublishableKey: () => required("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"),
   supabaseServiceRoleKey: () => requiredOne(["SUPABASE_SECRET_KEY", "SUPABASE_SERVICE_ROLE_KEY"]),

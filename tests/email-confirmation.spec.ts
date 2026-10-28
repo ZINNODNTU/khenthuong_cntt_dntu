@@ -1,4 +1,16 @@
 import { expect, test } from "@playwright/test";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+const AUTH_ORIGIN = "https://khenthuong-cntt-dntu.vercel.app";
+
+test("Auth recovery/signup templates always use production host, never localhost", () => {
+  for (const [file, type] of [["recovery.html", "recovery"], ["confirm-signup.html", "email"]] as const) {
+    const html = readFileSync(resolve("supabase", "email-templates", file), "utf8");
+    expect(html).toContain(`href="${AUTH_ORIGIN}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=${type}"`);
+    expect(html).not.toMatch(/localhost|127\.0\.0\.1|http:\/\//i);
+  }
+});
 
 test("Email scanners only GET the link; token must not be consumed until a human confirms", async ({ request }) => {
   const tokenHash = "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789";

@@ -77,7 +77,7 @@ const emailTemplate = readFileSync(
   "utf8",
 );
 
-if (!emailTemplate.includes('href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email"')) {
+if (!emailTemplate.includes('href="https://khenthuong-cntt-dntu.vercel.app/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email"')) {
   fail("Signup email must use the server-side token_hash confirmation route.");
 }
 
@@ -85,7 +85,7 @@ const recoveryTemplate = readFileSync(
   resolve(process.cwd(), "supabase/email-templates/recovery.html"),
   "utf8",
 );
-if (!recoveryTemplate.includes('href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=recovery"')) {
+if (!recoveryTemplate.includes('href="https://khenthuong-cntt-dntu.vercel.app/auth/confirm?token_hash={{ .TokenHash }}&amp;type=recovery"')) {
   fail("Recovery email must verify token_hash on the server before password reset.");
 }
 const recoveryFinish = readFileSync(

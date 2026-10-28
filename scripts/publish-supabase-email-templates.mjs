@@ -35,7 +35,7 @@ for (const template of templates) {
   const root = resolve("supabase", "email-templates");
   const subject = readFileSync(resolve(root, template.subject), "utf8").trim();
   const html = readFileSync(resolve(root, template.html), "utf8");
-  const expected = `href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=${template.type}"`;
+  const expected = `href="https://khenthuong-cntt-dntu.vercel.app/auth/confirm?token_hash={{ .TokenHash }}&amp;type=${template.type}"`;
   if (!subject || subject.length > 180 || !html.includes(expected) ||
       !html.includes('lang="vi"') || !html.includes('role="presentation"') ||
       /<script\b|<img\b|http:\/\//i.test(html)) {
@@ -74,25 +74,40 @@ async function request(method, payload) {
 }
 
 try {
-  // Verify the project Site URL before updating links that use {{ .SiteURL }}.
   const current = await request("GET");
   const expectedSite = "https://khenthuong-cntt-dntu.vercel.app";
-  if ((current.site_url || "").replace(/\/$/, "") !== expectedSite) {
-    console.error("Site URL does not match the production domain. Update Authentication → URL Configuration first. No templates were changed.");
-    process.exit(1);
-  }
+  // Preserve any existing redirects, including valid previews and other clients.
+  const requiredRedirects = [
+    `${expectedSite}/auth/finish`,
+    `${expectedSite}/auth/finish?mode=recovery`,
+  ];
+  const currentRedirects = typeof current.uri_allow_list === "string"
+    ? current.uri_allow_list.split(",").map(value => value.trim()).filter(Boolean)
+    : [];
+  const mergedRedirects = [...new Set([...currentRedirects, ...requiredRedirects])];
+  const siteIsCorrect = (current.site_url || "").replace(/\/$/, "") === expectedSite;
+  const redirectsAreCorrect = requiredRedirects.every(value => currentRedirects.includes(value));
   if (operation === "apply") {
-    await request("PATCH", body);
-    console.log(`Published only confirmation/recovery HTML + subjects for project ${projectRef}.`);
+    const payload = { ...body };
+    if (!siteIsCorrect) payload.site_url = expectedSite;
+    if (!redirectsAreCorrect) payload.uri_allow_list = mergedRedirects.join(",");
+    await request("PATCH", payload);
+    console.log(`Published auth templates and synchronized production URL configuration for project ${projectRef}.`);
   }
   const published = operation === "apply" ? await request("GET") : current;
   const mismatched = Object.keys(body).filter(key => published[key] !== body[key]);
+  const validSite = (published.site_url || "").replace(/\/$/, "") === expectedSite;
+  const validRedirects = requiredRedirects.every(value => (
+    typeof published.uri_allow_list === "string" &&
+    published.uri_allow_list.split(",").map(entry => entry.trim()).includes(value)
+  ));
   console.log(`Remote auth templates: ${mismatched.length ? "NOT SYNCHRONIZED" : "MATCH LOCAL FILES"}.`);
-  console.log(`Site URL: production domain verified. Confirm email: ${published.mailer_autoconfirm === false ? "REQUIRED" : "verify setting manually"}.`);
+  console.log(`Production Site URL: ${validSite ? "CORRECT" : "INCORRECT"}; redirect allow list: ${validRedirects ? "CORRECT" : "INCOMPLETE"}.`);
+  console.log(`Confirm email: ${published.mailer_autoconfirm === false ? "REQUIRED" : "verify setting manually"}.`);
   const smtpFields = ["smtp_host", "smtp_port", "smtp_user", "smtp_admin_email"];
   console.log(`SMTP configuration visibility: ${smtpFields.every(field => Boolean(published[field])) ? "essential fields present" : "at least one field not exposed or unset"}; delivery is NOT proven.`);
-  if (mismatched.length) {
-    console.error(`Mismatched template fields: ${mismatched.join(", ")}.`);
+  if (mismatched.length || !validSite || !validRedirects) {
+    console.error("Auth email configuration is not ready for production.");
     process.exitCode = 1;
   }
 } catch (error) {
