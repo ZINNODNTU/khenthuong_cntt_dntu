@@ -95,11 +95,20 @@ export async function POST(request: Request) {
       return respond(429, "RATE_LIMITED", "Hệ thống đang giới hạn số lần gửi thư. Vui lòng thử lại sau ít phút.");
     }
     console.error("[auth.email.upstream]", { purpose: mode, status: response.status, code: upstreamCode });
-    return respond(503, "EMAIL_PROVIDER_UNAVAILABLE",
+    // Expose only a coarse diagnostic category, never provider details or account identity.
+    if (response.status === 401 || response.status === 403) {
+      return respond(503, "AUTH_CONFIGURATION_ERROR",
+        "Dịch vụ xác thực email chưa được cấu hình đúng. Vui lòng liên hệ quản trị.");
+    }
+    if (response.status === 400 || response.status === 422) {
+      return respond(503, "AUTH_REQUEST_REJECTED",
+        "Hệ thống chưa xử lý được yêu cầu gửi thư. Vui lòng liên hệ quản trị.");
+    }
+    return respond(503, "UPSTREAM_EMAIL_FAILED",
       "Dịch vụ gửi thư đang gặp sự cố. Vui lòng thử lại sau hoặc liên hệ quản trị.");
   } catch (error) {
     console.error("[auth.email.network]", { purpose: mode, reason: error instanceof Error ? error.name : "unknown" });
-    return respond(503, "EMAIL_PROVIDER_UNAVAILABLE",
+    return respond(503, "AUTH_UPSTREAM_UNREACHABLE",
       "Hệ thống tạm thời không kết nối được dịch vụ gửi thư. Vui lòng thử lại sau.");
   }
 }
