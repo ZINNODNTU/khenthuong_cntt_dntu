@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
-  Award, BarChart3, Building, Building2, CalendarRange, ClipboardCheck,
+  Award, BarChart3, CalendarRange, ClipboardCheck,
   FileImage, FilePlus2, Files, History,
   ListChecks, MessageSquare, Settings, ShieldCheck, User, Users,
 } from "lucide-react";
@@ -32,8 +32,6 @@ const adminGroups: NavGroup[] = [
   { label: "Quản lý dữ liệu", items: [
     { href: "/admin/users", label: "Quản lý tài khoản", description: "Phân quyền và trạng thái", icon: ShieldCheck },
     { href: "/branches", label: "Quản lý Chi đoàn", description: "Danh sách Chi đoàn sinh viên", icon: Users },
-    { href: "/clubs", label: "Quản lý CLB", description: "Danh sách câu lạc bộ", icon: Building2 },
-    { href: "/admin/units", label: "Quản lý đơn vị", description: "Phân loại và trạng thái đơn vị", icon: Building },
     { href: "/admin/evidences", label: "Quản lý minh chứng", description: "Duyệt và xóa tệp", icon: FileImage },
   ]},
   // Nhóm 4 — Quản trị hệ thống

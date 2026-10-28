@@ -186,9 +186,11 @@ export const createBranchSchema = z.object({
 });
 export const updateBranchSchema = z.object({
     code: branchCodeSchema,
+    newCode: branchCodeSchema.optional(),
     name: z.string().trim().min(2).max(100).optional(),
     isActive: z.boolean(),
 });
+export const deleteBranchSchema = z.object({ code: branchCodeSchema });
 export const provisionBranchAccountSchema = z.object({
     code: branchCodeSchema.optional(),
     allMissing: z.boolean().optional().default(false),

@@ -5,6 +5,7 @@ import { studentIdFromDntuEmail } from "@/lib/identity";
 import { studentProfileComplete } from "@/lib/student-onboarding";
 import { PageHeader } from "@/components/ui/page-header";
 import styles from "./profile.module.css";
+import { AccountProfileEditor } from "@/components/account-profile-editor";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +33,10 @@ export default async function MyProfilePage() {
   }
   const studentId = studentIdFromDntuEmail(profile.email);
   const completed = studentProfileComplete(profile);
+  const editable = profile.role === "submitter" && profile.submission_scope === "individual";
+  const { data: activeBranches } = editable
+    ? await supabase.from("branches").select("code,name").eq("is_active", true).order("code")
+    : { data: [] as { code: string; name: string }[] };
   const fields = [
     { label: "Họ và tên", value: profile.full_name || "Chưa cập nhật", icon: UserRound },
     { label: "Mã số sinh viên", value: studentId || "Không áp dụng", icon: GraduationCap },
@@ -47,7 +52,7 @@ export default async function MyProfilePage() {
       <PageHeader
         eyebrow="TÀI KHOẢN CỦA TÔI"
         title="Thông tin cá nhân"
-        description="Xem dữ liệu đã đăng ký và trạng thái tài khoản của bạn. Nội dung trang này chỉ hiển thị cho chính tài khoản đang đăng nhập."
+        description="Kiểm tra và cập nhật thông tin đã đăng ký. Email và mã số sinh viên được bảo vệ, không thể thay đổi tại đây."
       />
       <section className={styles.intro} aria-label="Trạng thái tài khoản">
         <div className={styles.identityIcon}><CircleUserRound size={31} aria-hidden="true" /></div>
@@ -65,7 +70,7 @@ export default async function MyProfilePage() {
       <section className={styles.panel} aria-labelledby="personal-details">
         <div className={styles.sectionHead}>
           <div><span className={styles.eyebrow}>THÔNG TIN ĐÃ ĐĂNG KÝ</span><h2 id="personal-details">Chi tiết tài khoản</h2></div>
-          <span className={styles.readOnly}><LockKeyhole size={15} /> Chỉ xem</span>
+          <span className={styles.readOnly}><LockKeyhole size={15} /> {editable ? "MSSV / email cố định" : "Chỉ xem"}</span>
         </div>
         <dl className={styles.fields}>
           {fields.map(({ label, value, icon: Icon }) => (
@@ -75,9 +80,13 @@ export default async function MyProfilePage() {
             </div>
           ))}
         </dl>
+        {editable && <AccountProfileEditor
+          initial={{ fullName: profile.full_name || "", birthDate: profile.birth_date || "", phone: profile.phone || "", branchCode: profile.branch_code || "" }}
+          branches={activeBranches || []}
+        />}
       </section>
       <section className={styles.security} aria-label="Bảo mật và hỗ trợ">
-        <div><ShieldCheck size={21} aria-hidden="true" /><span><strong>Bảo mật thông tin</strong><small>Họ tên, số điện thoại, ngày sinh và đơn vị được lấy từ hồ sơ đăng ký; không thể xem dữ liệu của tài khoản khác trên trang này.</small></span></div>
+        <div><ShieldCheck size={21} aria-hidden="true" /><span><strong>Bảo mật thông tin</strong><small>Chỉ tài khoản của bạn được phép xem và cập nhật các thông tin cá nhân được hỗ trợ. Email và MSSV không thể sửa từ biểu mẫu.</small></span></div>
         {profile.role === "submitter" && <Link href="/applications" className={styles.action}>Hồ sơ khen thưởng của tôi <ChevronRight size={17} /></Link>}
       </section>
     </div>

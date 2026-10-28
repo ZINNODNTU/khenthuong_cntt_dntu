@@ -107,7 +107,7 @@ export function UserManager({
         <div className="mb-4">
           <h3 className="font-semibold text-lg">Tạo tài khoản</h3>
           <p className="text-sm text-secondary">
-            Tài khoản Chi đoàn được cấp tại <Link href="/branches" className="link-primary">Quản lý Chi đoàn</Link>; CLB tại <Link href="/clubs" className="link-primary">Quản lý CLB</Link>.
+            Danh mục Chi đoàn sinh viên được quản lý tại <Link href="/branches" className="link-primary">Quản lý Chi đoàn</Link>. Hệ thống chỉ tiếp nhận hồ sơ khen thưởng cá nhân.
           </p>
         </div>
         <div className="form-grid">

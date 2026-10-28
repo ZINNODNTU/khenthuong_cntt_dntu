@@ -39,3 +39,33 @@
   .security { padding: 18px; }
   .action { width: 100%; }
 }
+
+.editSection { padding: 22px 26px; background: var(--color-surface, #fff); }
+.editHeading { display: flex; gap: 15px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+.editHeading > div { flex: 1; min-width: 215px; }
+.editHeading strong { font-size: 15px; font-weight: 750; }
+.editHeading p, .editHelp { margin: 6px 0 0; font-size: 12px; line-height: 1.65; color: var(--color-text-secondary, #566e7e); }
+.editButton, .saveButton, .cancelButton { display: inline-flex; gap: 8px; align-items: center; justify-content: center; padding: 10px 15px; border-radius: 8px; font-size: 13px; font-weight: 750; cursor: pointer; }
+.editButton, .saveButton { background: #1b486a; color: #fff; border: 1px solid #1b486a; }
+.editButton:hover, .saveButton:hover { background: #275d84; }
+.cancelButton { border: 1px solid var(--color-border, #c8d8e3); background: var(--color-surface, #fff); color: var(--color-text, #1b3854); }
+.editButton:disabled, .saveButton:disabled, .cancelButton:disabled { opacity: .55; cursor: not-allowed; }
+.editForm { border-top: 1px solid var(--color-border, #e4eaf1); margin-top: 20px; padding-top: 22px; }
+.editGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.editGrid > div { display: grid; gap: 8px; min-width: 0; }
+.editGrid label { font-size: 12px; font-weight: 750; color: var(--color-text, #294763); }
+.editGrid label span { color: #b1492a; }
+.editGrid input, .editGrid select { width: 100%; min-height: 44px; }
+.editActions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+.errorNote, .successNote { margin: 12px 0 16px; padding: 12px 14px; border-radius: 8px; font-size: 13px; line-height: 1.6; }
+.errorNote { background: #fff0ee; border: 1px solid #ecc5bd; color: #9c301f; }
+.successNote { display: flex; gap: 8px; align-items: center; background: #ecf8f0; border: 1px solid #c3e3cf; color: #17613c; }
+.spinner { animation: profileSpinner 1s linear infinite; }
+@keyframes profileSpinner { to { transform: rotate(360deg); } }
+@media (max-width: 720px) {
+  .editSection { padding: 18px; }
+  .editGrid { grid-template-columns: 1fr; }
+  .editButton { width: 100%; }
+  .editActions button { flex: 1; }
+}
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }

@@ -76,9 +76,9 @@ Sau khi khởi tạo schema bằng tài khoản chủ Supabase:
 
 1. Tạo admin bằng `CREATE_INITIAL_ADMIN.bat`.
 2. Đăng nhập admin.
-3. Vào `/branches` để cấp tài khoản cho 19 Chi đoàn có sẵn.
-4. Thêm CLB tại `/clubs`; tài khoản CLB được tạo ngay.
-5. Tạo tài khoản sinh viên/cán bộ tại `/admin/users`.
+3. Vào `/branches` để thêm, sửa và xóa các Chi đoàn chưa được sử dụng; Chi đoàn có tài khoản/hồ sơ chỉ được ngừng sử dụng.
+4. Sinh viên có thể chỉnh sửa họ tên, ngày sinh, số điện thoại và Chi đoàn tại `/account/profile` (Chi đoàn chọn từ danh mục đang hoạt động).
+5. Tạo tài khoản sinh viên/cán bộ tại `/admin/users`. Quản lý CLB và đơn vị đã ngừng sử dụng.
 6. Tạo đợt xét tại `/periods`.
 7. Chỉ tiếp nhận hồ sơ **cá nhân C1–C9**. Thống nhất minh chứng và điều kiện theo `docs/TIEU_CHI_CA_NHAN_DOAN_HOI_2026-10-18.md` trước khi mở đợt xét.
 8. Người nộp cung cấp minh chứng theo từng tiêu chí; người xét duyệt chỉ xác nhận **Đạt / Không đạt**, không nhập hoặc tổng hợp điểm số.

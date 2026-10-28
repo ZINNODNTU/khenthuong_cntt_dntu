@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createBranchSchema, updateBranchSchema } from "@/lib/validation";
+import { createBranchSchema, updateBranchSchema, deleteBranchSchema } from "@/lib/validation";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { writeAudit } from "@/lib/audit";
 async function requireAdmin() {
     const supabase = await createClient();
@@ -71,22 +72,58 @@ export async function PATCH(request: Request) {
         return NextResponse.json({ error: parsed.error.issues[0]?.message }, { status: 400 });
     }
     const code = parsed.data.code.toUpperCase();
+    const newCode = parsed.data.newCode?.toUpperCase() || code;
     const { data: branch, error } = await auth.supabase
         .from("branches")
         .update({
-        name: parsed.data.name || code,
+        code: newCode,
+        name: parsed.data.name || newCode,
         is_active: parsed.data.isActive,
     })
         .eq("code", code)
         .select()
-        .single();
+        .maybeSingle();
     if (error || !branch) {
-        return NextResponse.json({ error: "Không thể cập nhật chi đoàn" }, { status: 400 });
+        const problem = error?.code === "23503" ? "Mã Chi đoàn đã được sử dụng trong tài khoản hoặc hồ sơ; chỉ có thể sửa tên và trạng thái."
+            : error?.code === "23505" ? "Mã Chi đoàn mới đã tồn tại."
+            : "Không thể cập nhật Chi đoàn.";
+        return NextResponse.json({ error: problem }, { status: error?.code === "23503" ? 409 : 400 });
     }
     await writeAudit(auth.supabase, auth.user.id, "branch.update", "branch", null, {
-        code,
+        code, newCode,
         isActive: parsed.data.isActive,
     });
     return NextResponse.json({ branch });
 }
 
+/**
+ * Physically delete only unused branches. PostgreSQL FKs protect historical
+ * applicants and submissions, including references created concurrently.
+ */
+export async function DELETE(request: Request) {
+    const auth = await requireAdmin();
+    if ("error" in auth) return auth.error;
+    const parsed = deleteBranchSchema.safeParse(await request.json().catch(() => null));
+    if (!parsed.success) return NextResponse.json({ error: "Mã Chi đoàn không hợp lệ." }, { status: 400 });
+    const code = parsed.data.code.toUpperCase();
+    const admin = createAdminClient();
+    const [{ count: assigned, error: assignedError }, { count: applications, error: applicationsError }] = await Promise.all([
+        admin.from("profiles").select("id", { count: "exact", head: true }).eq("branch_code", code),
+        admin.from("applications").select("id", { count: "exact", head: true }).eq("branch_code", code),
+    ]);
+    if (assignedError || applicationsError) return NextResponse.json({ error: "Không thể xác minh ràng buộc Chi đoàn. Chưa xóa dữ liệu." }, { status: 503 });
+    if ((assigned || 0) > 0 || (applications || 0) > 0) {
+        return NextResponse.json({ error: "Không thể xóa Chi đoàn đã có tài khoản hoặc hồ sơ. Bạn có thể ngừng sử dụng để giữ nguyên lịch sử.", code: "BRANCH_IN_USE" }, { status: 409 });
+    }
+    const { data, error } = await admin.from("branches").delete().eq("code", code).select("code").maybeSingle();
+    if (error) {
+        return NextResponse.json({
+            error: error.code === "23503"
+                ? "Chi đoàn đang được dữ liệu khác tham chiếu. Chỉ có thể ngừng sử dụng."
+                : "Không thể xóa Chi đoàn. Dữ liệu hiện có được giữ nguyên.",
+        }, { status: error.code === "23503" ? 409 : 503 });
+    }
+    if (!data) return NextResponse.json({ error: "Không tìm thấy Chi đoàn cần xóa." }, { status: 404 });
+    await writeAudit(auth.supabase, auth.user.id, "branch.delete", "branch", null, { code });
+    return NextResponse.json({ ok: true });
+}
