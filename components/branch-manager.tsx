@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil, Trash2, X } from "lucide-react";
 import type { Branch } from "@/lib/types";
@@ -14,6 +14,9 @@ export function BranchManager({ branches, canManage }: { branches: Branch[]; can
   const [editCode, setEditCode] = useState("");
   const [editName, setEditName] = useState("");
   const [editActive, setEditActive] = useState(true);
+  useEffect(() => {
+    if (editing) document.getElementById("branch-edit-code")?.focus();
+  }, [editing]);
 
   async function mutate(method: "POST" | "PATCH" | "DELETE", payload: unknown) {
     const response = await fetch("/api/admin/branches", {
@@ -81,9 +84,11 @@ export function BranchManager({ branches, canManage }: { branches: Branch[]; can
     try {
       await mutate("DELETE", { code: branch.code });
       setMessage(`Đã xóa Chi đoàn ${branch.code} khỏi danh mục.`);
+      requestAnimationFrame(() => document.getElementById("branch-manager-message")?.scrollIntoView({ block: "center", behavior: "smooth" }));
       if (editing === branch.code) setEditing(null);
     } catch (reason) {
       setMessage(reason instanceof Error ? reason.message : "Không thể xóa Chi đoàn.");
+      requestAnimationFrame(() => document.getElementById("branch-manager-message")?.scrollIntoView({ block: "center", behavior: "smooth" }));
     } finally { setBusy(""); }
   }
   return (
@@ -94,7 +99,7 @@ export function BranchManager({ branches, canManage }: { branches: Branch[]; can
             <h3 className="font-semibold text-lg">Danh mục Chi đoàn sinh viên</h3>
             <p className="text-sm text-secondary">Sinh viên chọn Chi đoàn từ danh mục này khi đăng ký hoặc cập nhật thông tin cá nhân. Có thể đổi tên, trạng thái hoặc xóa Chi đoàn chưa sử dụng.</p>
           </div>
-          {message && <div role={message.startsWith("Đã") ? "status" : "alert"} className={`notice ${message.startsWith("Đã") ? "notice-success" : "notice-error"} mb-4`}>{message}</div>}
+          {message && <div id="branch-manager-message" role={message.startsWith("Đã") ? "status" : "alert"} className={`notice ${message.startsWith("Đã") ? "notice-success" : "notice-error"} mb-4`}>{message}</div>}
           <div className="form-grid">
             <div className="field"><label className="field-label" htmlFor="branch-code">Mã Chi đoàn *</label>
               <input id="branch-code" className="input" name="code" required pattern="[A-Za-z0-9_-]+" maxLength={30} placeholder="Ví dụ: 26DTH1" disabled={!!busy} /></div>
@@ -134,6 +139,7 @@ export function BranchManager({ branches, canManage }: { branches: Branch[]; can
             <h3 className="font-semibold">Chỉnh sửa Chi đoàn {editing}</h3>
             <button type="button" className="btn btn-ghost btn-icon" onClick={() => setEditing(null)} disabled={!!busy} aria-label="Đóng chỉnh sửa"><X size={17} /></button>
           </div>
+          {message && !message.startsWith("Đã") && <div className="notice notice-error mb-4" role="alert">{message}</div>}
           <div className="form-grid">
             <div className="field"><label className="field-label" htmlFor="branch-edit-code">Mã Chi đoàn *</label>
               <input className="input" id="branch-edit-code" value={editCode} onChange={e => setEditCode(e.target.value.toUpperCase())} required maxLength={30} pattern="[A-Z0-9_-]+" disabled={!!busy} /></div>
