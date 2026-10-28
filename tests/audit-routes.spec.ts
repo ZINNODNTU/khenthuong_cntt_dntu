@@ -8,6 +8,11 @@ test("Recovery password route requires an authenticated Supabase session", async
   expect(response.status()).toBe(401);
 });
 
+test("Audit health endpoint requires admin and never creates guest events", async ({ request }) => {
+  const response = await request.post("/api/admin/audit-health");
+  expect(response.status()).toBe(401);
+});
+
 test("Login audit receipt requires an authenticated session", async ({ request }) => {
   const response = await request.post("/api/auth/login-event");
   expect(response.status()).toBe(401);

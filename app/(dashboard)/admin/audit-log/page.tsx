@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireRole } from "@/lib/auth";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
+import { AuditHealthButton } from "@/components/audit-health-button";
 import type { ColumnDef } from "@/components/ui/data-table";
 
 export const dynamic = "force-dynamic";
@@ -36,6 +37,8 @@ const ACTION_LABELS: Record<string, string> = {
   "account.password_reset_failed": "Khôi phục mật khẩu thất bại",
   "account.password_profile_sync_failed": "Chưa đồng bộ trạng thái mật khẩu",
   "account.logout": "Đăng xuất",
+  "auth.login_success": "Đăng nhập thành công",
+  "system.audit_health_check": "Kiểm tra ghi nhật ký",
   "profile.update_self": "Cập nhật thông tin cá nhân",
   "branch.create": "Thêm Chi đoàn",
   "branch.update": "Sửa Chi đoàn",
@@ -117,6 +120,7 @@ export default async function AuditLogPage() {
       <form action="/admin/audit-log" method="get" style={{ marginBottom: 16 }}>
         <button type="submit" className="btn btn-outline">Làm mới nhật ký</button>
       </form>
+      <AuditHealthButton />
       <DataTable
         columns={columns}
         data={rows}
