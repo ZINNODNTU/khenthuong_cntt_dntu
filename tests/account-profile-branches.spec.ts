@@ -7,6 +7,17 @@ test("Guest cannot access profile edit API", async ({ request }) => {
   });
   expect(response.status()).toBe(401);
 });
+test("Cross-origin profile edit requests are rejected even without an authenticated session", async ({ request }) => {
+  const result = await request.patch("/api/account/profile", {
+    headers: { origin: "https://malicious.example" },
+    data: { fullName: "Sinh viên Test", phone: "0901234567", birthDate: "2003-01-01", branchCode: "22DTH1" },
+  });
+  // Proxy may reject anonymous callers (401) before the route's origin check (403).
+  expect([401, 403]).toContain(result.status());
+  const source = readFileSync("app/api/account/profile/route.ts", "utf8");
+  expect(source).toContain('request.headers.get("origin")');
+  expect(source).toContain('request.headers.get("sec-fetch-site") === "cross-site"');
+});
 test("Guest cannot modify or delete a branch", async ({ request }) => {
   expect((await request.delete("/api/admin/branches", { data: { code: "22DTH1" } })).status()).toBe(401);
   expect((await request.patch("/api/admin/branches", { data: { code: "22DTH1", name: "Test", isActive: false } })).status()).toBe(401);
