@@ -83,21 +83,33 @@ footer{margin-top:22px;border-top:1px solid #e6edf2;padding-top:16px;color:#7384
  * propagate the exchanged session in some Next.js/serverless configurations.
  */
 export async function POST(request: NextRequest) {
-  const origin = request.nextUrl.origin;
+  const origin = new URL(env.appUrl()).origin;
+  const requestOrigin = request.nextUrl.origin;
   const source = request.headers.get("origin");
   const fetchSite = request.headers.get("sec-fetch-site");
-  if ((source && source !== origin) || fetchSite === "cross-site") return invalidLink(origin);
+  if ((source && source !== origin && source !== requestOrigin) || fetchSite === "cross-site") {
+    console.warn("[auth.confirm.guard]", { reason: "origin", sourceIsApp: source === origin, requestIsApp: requestOrigin === origin, fetchSite });
+    return invalidLink(origin);
+  }
 
   let form: FormData;
   try {
-    if (Number(request.headers.get("content-length") || 0) > 4096) return invalidLink(origin);
+    if (Number(request.headers.get("content-length") || 0) > 4096) {
+      console.warn("[auth.confirm.guard]", { reason: "oversized_form" });
+      return invalidLink(origin);
+    }
     form = await request.formData();
   } catch {
+    console.warn("[auth.confirm.guard]", { reason: "invalid_form" });
     return invalidLink(origin);
   }
   const hash = String(form.get("token_hash") || "");
   const type = String(form.get("type") || "");
-  if (!validToken(hash, type)) return invalidLink(origin, type);
+  if (!validToken(hash, type)) {
+    console.warn("[auth.confirm.guard]", { reason: "invalid_token_fields", hashLength: hash.length, type });
+    return invalidLink(origin, type);
+  }
+  console.info("[auth.confirm.verify_start]", { type, sourceIsApp: source === origin, requestIsApp: requestOrigin === origin, fetchSite });
 
   const next = type === "recovery" ? "/reset-password" : safeNext(String(form.get("next") || "/"));
   const response = NextResponse.redirect(new URL(next, origin), 303);
