@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { env } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
-export const runtime = "nodejs";
+// Edge networking is used because the Vercel Node function could not reach Supabase Auth.
+export const runtime = "edge";
 
 const EMAIL_PATTERN = /^[^\s@]{1,64}@[^\s@]{1,189}\.[^\s@]{2,}$/;
 type Purpose = "recovery" | "signup";
