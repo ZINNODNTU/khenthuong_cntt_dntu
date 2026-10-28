@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { env } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
-// Edge networking is used because the Vercel Node function could not reach Supabase Auth.
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 const EMAIL_PATTERN = /^[^\s@]{1,64}@[^\s@]{1,189}\.[^\s@]{2,}$/;
 type Purpose = "recovery" | "signup";
@@ -66,6 +65,13 @@ export async function POST(request: Request) {
   }
 
   const mode = purpose as Purpose;
+  // Production must never send account links through another Supabase tenant.
+  if (process.env.NODE_ENV === "production" &&
+      new URL(env.supabaseUrl()).hostname !== "nzoamsyazdafyqnsxkny.supabase.co") {
+    console.error("[auth.email.config]", { code: "SUPABASE_PROJECT_MISMATCH" });
+    return respond(503, "SUPABASE_PROJECT_MISMATCH",
+      "Hệ thống đang kết nối sai dự án xác thực. Vui lòng liên hệ quản trị.");
+  }
   const redirectTo = new URL(mode === "recovery" ? "/auth/finish?mode=recovery" : "/auth/finish", env.appUrl());
   const endpoint = new URL(mode === "recovery" ? "/auth/v1/recover" : "/auth/v1/resend", env.supabaseUrl());
   endpoint.searchParams.set("redirect_to", redirectTo.toString());

@@ -15,6 +15,10 @@ export async function requestAuthEmail(
     });
     if (response.ok) return { ok: true };
     const body = await response.json().catch(() => ({})) as { code?: string; error?: string };
+    if (body.code === "SUPABASE_PROJECT_MISMATCH") {
+      return { ok: false, code: "SUPABASE_PROJECT_MISMATCH",
+        message: "Cấu hình xác thực của website đang sai dự án Supabase. Vui lòng liên hệ quản trị để khắc phục." };
+    }
     if (response.status === 429) {
       return { ok: false, code: "RATE_LIMITED",
         message: "Hệ thống đang giới hạn số lần gửi email. Vui lòng thử lại sau ít phút." };
