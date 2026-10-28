@@ -14,14 +14,14 @@ function enabled(name: string, fallback = true): boolean {
 }
 export const env = {
   appUrl: () => {
-    const configured = process.env.NEXT_PUBLIC_APP_URL?.trim();
-    if (process.env.NODE_ENV === "production" && (!configured || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/i.test(configured))) {
+    const configured = (process.env.AWARD_APP_URL || process.env.NEXT_PUBLIC_APP_URL)?.trim();
+    if (process.env.NODE_ENV === "production" && (!configured || configured.includes(".supabase.co") || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/i.test(configured))) {
       return "https://khenthuong-cntt-dntu.vercel.app";
     }
     return configured || "http://localhost:3000";
   },
-  supabaseUrl: () => required("NEXT_PUBLIC_SUPABASE_URL"),
-  supabasePublishableKey: () => required("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"),
+  supabaseUrl: () => process.env.NEXT_PUBLIC_AWARD_SUPABASE_URL || required("NEXT_PUBLIC_SUPABASE_URL"),
+  supabasePublishableKey: () => process.env.NEXT_PUBLIC_AWARD_SUPABASE_PUBLISHABLE_KEY || required("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"),
   supabaseServiceRoleKey: () => requiredOne(["SUPABASE_SECRET_KEY", "SUPABASE_SERVICE_ROLE_KEY"]),
   googleAppsScriptWebAppUrl: () => required("GOOGLE_APPS_SCRIPT_WEB_APP_URL"),
   googleAppsScriptSharedSecret: () => required("GOOGLE_APPS_SCRIPT_SHARED_SECRET"),

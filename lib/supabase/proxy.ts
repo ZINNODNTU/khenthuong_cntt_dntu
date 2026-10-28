@@ -41,8 +41,8 @@ export async function updateSession(request: NextRequest) {
     const path = request.nextUrl.pathname;
     const isApi = path.startsWith("/api/");
     const isAuthApi = path.startsWith("/api/auth/");
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+    const url = process.env.NEXT_PUBLIC_AWARD_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_AWARD_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
     const configurationPath = path.startsWith("/configuration");
     if (!url || !key) {
         if (configurationPath || path.startsWith("/_next") || path.startsWith("/brand/")) {
