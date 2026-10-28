@@ -97,6 +97,9 @@ function LoginFormInner({ signupEnabled, loginQuery }: { signupEnabled: boolean;
                 : safeNext(loginQuery.next ?? null) || roleDestination(profile.role);
 
       navigating = true;
+      // Keepalive survives the immediate navigation; never include credentials.
+      // Login must succeed even if the optional audit request is unavailable.
+      void fetch("/api/auth/login-event", { method: "POST", keepalive: true, cache: "no-store" }).catch(() => {});
       // A single native navigation avoids replace() + refresh() and the
       // intermediate home-page profile lookup/redirect waterfall.
       window.location.replace(target);

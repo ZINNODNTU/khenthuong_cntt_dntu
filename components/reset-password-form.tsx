@@ -29,8 +29,19 @@ export default function ResetPasswordForm() {
       if (sessionError || !user) { setError("Liên kết đã hết hạn hoặc phiên xác thực không hợp lệ. Hãy yêu cầu liên kết mới."); return; }
       const policyError = validatePassword(password, {email:user.email});
       if (policyError) { setError(policyError); return; }
-      const { error: updateError } = await client.auth.updateUser({password});
-      if (updateError) { setError("Không thể cập nhật mật khẩu. Liên kết có thể hết hạn; vui lòng yêu cầu lại."); return; }
+      const response = await fetch("/api/account/reset-password", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      const result = await response.json().catch(() => ({})) as { error?: string; auditRecorded?: boolean };
+      if (!response.ok) {
+        setError(result.error || "Không thể cập nhật mật khẩu. Vui lòng yêu cầu liên kết mới.");
+        return;
+      }
+      if (result.auditRecorded === false) {
+        console.warn("[password.recovery] Updated password but audit could not be recorded.");
+      }
       await client.auth.signOut({scope:"local"});
       setDone(true);
     } catch {

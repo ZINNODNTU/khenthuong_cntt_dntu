@@ -4,6 +4,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import type { ColumnDef } from "@/components/ui/data-table";
 
+export const dynamic = "force-dynamic";
+
 const MODULE_LABELS: Record<string, string> = {
   auth: "Xác thực", accounts: "Tài khoản", roles: "Vai trò",
   periods: "Đợt xét", criteria: "Tiêu chí", applications: "Hồ sơ",
@@ -27,7 +29,18 @@ const ACTION_LABELS: Record<string, string> = {
   period_create: "Tạo đợt xét", period_update: "Cập nhật đợt xét", period_delete: "Xóa đợt xét",
   application_create: "Tạo hồ sơ", application_submit: "Gửi hồ sơ", application_supplement: "Bổ sung hồ sơ", application_delete: "Xóa hồ sơ",
   application_decision: "Xét duyệt hồ sơ", evidence_upload: "Tải ảnh lên",
-  account_change_password: "Đổi mật khẩu", user_create: "Tạo tài khoản",
+  account_change_password: "Đổi mật khẩu",
+  "account.change_password": "Đổi mật khẩu",
+  "account.change_password_failed": "Đổi mật khẩu không thành công",
+  "account.password_reset": "Khôi phục mật khẩu qua email",
+  "account.password_reset_failed": "Khôi phục mật khẩu thất bại",
+  "account.password_profile_sync_failed": "Chưa đồng bộ trạng thái mật khẩu",
+  "account.logout": "Đăng xuất",
+  "profile.update_self": "Cập nhật thông tin cá nhân",
+  "branch.create": "Thêm Chi đoàn",
+  "branch.update": "Sửa Chi đoàn",
+  "branch.delete": "Xóa Chi đoàn",
+  user_create: "Tạo tài khoản",
   user_reset_password: "Reset mật khẩu", user_set_active: "Khóa/Mở khóa",
   user_update_profile: "Cập nhật tài khoản", branch_create_with_account: "Tạo chi đoàn",
   branch_provision_accounts: "Cấp tài khoản chi đoàn", branch_update: "Cập nhật chi đoàn",
@@ -64,12 +77,13 @@ const ROLE_LABELS: Record<string, string> = { admin: "Quản trị", reviewer: "
 export default async function AuditLogPage() {
   const { supabase } = await requireRole(["admin"]);
 
-  const { data } = await supabase
+  const { data, error: logsError } = await supabase
     .from("audit_logs")
     .select("id,created_at,actor_id,action,entity_type,entity_id,metadata")
     .order("created_at", { ascending: false })
-    .limit(100);
+    .limit(200);
 
+  if (logsError) console.error("[audit.read_failed]", { code: logsError.code });
   const actorIds = [...new Set((data || []).map((r) => r.actor_id).filter(Boolean))];
   const { data: actors } = actorIds.length
     ? await supabase.from("profiles").select("id,full_name,role").in("id", actorIds)
@@ -97,15 +111,19 @@ export default async function AuditLogPage() {
       <PageHeader
         eyebrow="QUẢN TRỊ HỆ THỐNG"
         title="Nhật ký hoạt động"
-        description="Lịch sử toàn bộ thao tác trên hệ thống, không thể sửa hoặc xóa."
+        description="Tối đa 200 hoạt động gần nhất do hệ thống ghi nhận. Dữ liệu cũ trước khi sửa lỗi ghi nhật ký có thể không khôi phục được."
       />
+      {logsError && <div role="alert" className="notice notice-error mb-4">Không thể tải nhật ký từ Supabase. Vui lòng kiểm tra quyền truy cập cơ sở dữ liệu.</div>}
+      <form action="/admin/audit-log" method="get" style={{ marginBottom: 16 }}>
+        <button type="submit" className="btn btn-outline">Làm mới nhật ký</button>
+      </form>
       <DataTable
         columns={columns}
         data={rows}
         clientSearch
         searchPlaceholder="Tìm kiếm theo hành động, người thực hiện..."
         emptyTitle="Chưa có nhật ký"
-        emptyDescription="Các thao tác quản trị sẽ được ghi lại tại đây."
+        emptyDescription={logsError ? "Không thể truy xuất nhật ký." : "Chưa có sự kiện nào được ghi nhận. Các sự kiện mới sau khi phát hành bản sửa sẽ xuất hiện tại đây."}
       />
     </>
   );
