@@ -21,7 +21,7 @@ test("Email scanners only GET the link; token must not be consumed until a human
   expect(html).toContain('name="token_hash"');
   expect(html).toContain("Tiếp tục đặt lại mật khẩu");
   expect(response.headers()["cache-control"]).toContain("no-store");
-  expect(response.headers()["referrer-policy"]).toBe("no-referrer");
+  expect(response.headers()["referrer-policy"]).toBe("origin");
 });
 
 test("Email verification page supports signup email without auto-redirect", async ({ request }) => {
@@ -40,6 +40,22 @@ test("Invalid confirmation links are safely rejected and never expose a token", 
 test("Expired signup confirmation offers resend rather than password recovery", async ({ page }) => {
   await page.goto("/auth/finish?error=invalid_link&flow=signup");
   await expect(page.getByRole("link", { name: "Gửi lại email xác nhận" })).toHaveAttribute("href", "/resend-confirmation");
+});
+
+test("Real browser form POST retains a trusted Origin and does not leak the OTP via Referer", async ({ page }) => {
+  await page.goto("/auth/confirm?token_hash=abcdef0123456789abcdef0123456789&type=recovery");
+  const origin = new URL(page.url()).origin;
+  const requestPromise = page.waitForRequest(req =>
+    req.method() === "POST" && new URL(req.url()).pathname === "/auth/confirm",
+    { timeout: 15000 }
+  );
+  await page.getByRole("button", { name: "Tiếp tục đặt lại mật khẩu" }).click();
+  const submitted = await requestPromise;
+  const sentHeaders = await submitted.allHeaders();
+  expect(sentHeaders.origin).toBe(origin);
+  expect(sentHeaders.referer || "").not.toContain("token_hash");
+  // The Playwright dev server runs at 127.0.0.1 while Next may canonicalize
+  // redirects to localhost; browser request headers are the regression target.
 });
 
 test("Invalid POST does not consume OTP or redirect with POST semantics", async ({ request }) => {

@@ -18,9 +18,10 @@ const nextConfig: NextConfig = {
         ...(process.env.NODE_ENV === "production" ? [{ key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" }] : []),
       ],
     }, {
-      // Email links carry one-time token hashes; never leak them in Referer headers.
+      // Keep only the public origin in Referer (never the one-time token hash).
+      // no-referrer makes Chrome send Origin: null on a native form POST, breaking CSRF verification.
       source: "/auth/confirm",
-      headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
+      headers: [{ key: "Referrer-Policy", value: "origin" }],
     }];
   },
 };

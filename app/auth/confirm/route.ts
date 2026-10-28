@@ -18,7 +18,7 @@ function validToken(hash: string, type: string): type is EmailOtpType {
 function headers() {
   return {
     "Cache-Control": "no-store, max-age=0",
-    "Referrer-Policy": "no-referrer",
+    "Referrer-Policy": "origin",
     "X-Content-Type-Options": "nosniff",
     "X-Robots-Tag": "noindex, nofollow",
   };
@@ -84,11 +84,15 @@ footer{margin-top:22px;border-top:1px solid #e6edf2;padding-top:16px;color:#7384
  */
 export async function POST(request: NextRequest) {
   const origin = new URL(env.appUrl()).origin;
-  const requestOrigin = request.nextUrl.origin;
   const source = request.headers.get("origin");
   const fetchSite = request.headers.get("sec-fetch-site");
-  if ((source && source !== origin && source !== requestOrigin) || fetchSite === "cross-site") {
-    console.warn("[auth.confirm.guard]", { reason: "origin", sourceIsApp: source === origin, requestIsApp: requestOrigin === origin, fetchSite });
+  // Next.js may normalize request.nextUrl.origin to localhost even when the
+  // development browser uses 127.0.0.1. Compare Host only in development.
+  const host = request.headers.get("host");
+  const devOrigin = host ? `http://${host}` : "";
+  const trusted = source === origin || (process.env.NODE_ENV !== "production" && source === devOrigin);
+  if ((source && !trusted) || fetchSite === "cross-site") {
+    console.warn("[auth.confirm.guard]", { reason: "origin", sourceIsApp: source === origin, fetchSite });
     return invalidLink(origin);
   }
 
@@ -109,7 +113,7 @@ export async function POST(request: NextRequest) {
     console.warn("[auth.confirm.guard]", { reason: "invalid_token_fields", hashLength: hash.length, type });
     return invalidLink(origin, type);
   }
-  console.info("[auth.confirm.verify_start]", { type, sourceIsApp: source === origin, requestIsApp: requestOrigin === origin, fetchSite });
+  console.info("[auth.confirm.verify_start]", { type, sourceIsApp: source === origin, fetchSite });
 
   const next = type === "recovery" ? "/reset-password" : safeNext(String(form.get("next") || "/"));
   const response = NextResponse.redirect(new URL(next, origin), 303);
