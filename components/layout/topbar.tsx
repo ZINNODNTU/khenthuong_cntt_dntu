@@ -1,6 +1,8 @@
 "use client";
 
-import { ChevronRight, HelpCircle, LogOut, Menu, Moon, Search, Sun, X } from "lucide-react";
+import Link from "next/link";
+
+import { ChevronRight, HelpCircle, LogOut, Menu, Moon, Search, Sun, X, UserRound } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { Profile, UserRole } from "@/lib/types";
 
@@ -125,13 +127,13 @@ export function Topbar({
           </button>
         </div>
         <span className="topbar-role-badge topbar-desktop-only">{roleLabel(profile.role)}</span>
-        <div className="topbar-user topbar-desktop-only">
+        <Link href="/account/profile" className="topbar-user topbar-desktop-only" aria-label="Xem thông tin cá nhân của tôi" title="Thông tin cá nhân" style={{ textDecoration: "none", color: "inherit" }}>
           <div className="sidebar-avatar topbar-avatar">{initials(profile)}</div>
           <div className="topbar-user-info">
             <div className="topbar-user-name">{profile.full_name || "Hệ thống"}</div>
             <div className="topbar-user-email">{profile.email}</div>
           </div>
-        </div>
+        </Link>
         <button type="button" className="btn btn-ghost btn-icon topbar-tablet-hide" aria-label="Đăng xuất" title="Đăng xuất" onClick={signOut}>
           <LogOut size={18} />
         </button>
@@ -150,6 +152,7 @@ export function Topbar({
               <div className="topbar-dropdown-role">{roleLabel(profile.role)}</div>
             </div>
             <div className="topbar-dropdown-divider" />
+            <Link href="/account/profile" className="topbar-dropdown-item" onClick={() => setUserMenuOpen(false)}><UserRound size={16} /><span>Thông tin cá nhân</span></Link>
             <button type="button" className="topbar-dropdown-item" onClick={toggleTheme}>
               {dark ? <Sun size={16} /> : <Moon size={16} />}
               <span>{dark ? "Giao diện sáng" : "Giao diện tối"}</span>

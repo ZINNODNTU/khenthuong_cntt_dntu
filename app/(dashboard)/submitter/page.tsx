@@ -103,7 +103,7 @@ export default async function SubmitterDashboard() {
           <div className={styles.panelHead}><div><span className={styles.panelEyebrow}>DÀNH CHO BẠN</span><h2 id="guide-heading">3 bước hoàn thành</h2><p>Lộ trình nhanh để nộp hồ sơ đúng yêu cầu.</p></div><span className={styles.panelIcon}><BadgeCheck size={20} /></span></div>
           <ol className={styles.guide}>
             <li><span className={styles.guideNumber}>01</span><div><strong>Chuẩn bị hồ sơ</strong><p>Kiểm tra thông tin hồ sơ, đợt xét và bộ tiêu chí áp dụng.</p></div><Check size={16} /></li>
-            <li><span className={styles.guideNumber}>02</span><div><strong>Tải minh chứng</strong><p>C1–C6 được tải nhiều mục và tệp; C7–C9 chỉ một tệp mỗi tiêu chí.</p></div><Check size={16} /></li>
+            <li><span className={styles.guideNumber}>02</span><div><strong>Tải minh chứng</strong><p>C1–C6 nộp theo thành tích có thực; C7 và C8 bắt buộc mỗi tiêu chí một tệp, C9 bắt buộc tích cam kết.</p></div><Check size={16} /></li>
             <li><span className={styles.guideNumber}>03</span><div><strong>Gửi và theo dõi</strong><p>Gửi xét duyệt, nhận phản hồi hoặc bổ sung minh chứng nếu cần.</p></div><Check size={16} /></li>
           </ol>
           <Link className={styles.guideLink} href="/criteria"><ShieldCheck size={16} /> Xem hướng dẫn minh chứng <ArrowRight size={15} /></Link>

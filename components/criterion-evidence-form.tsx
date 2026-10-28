@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
 import {
   ArrowRight, Check, CheckCircle2, CloudUpload,
@@ -396,6 +397,12 @@ export function CriterionEvidenceForm({
   const hasEvidence = (code: CriterionCode) => filesFor(code).length + pendingFor(code).length > 0;
   const optionalCount = codes.filter(code => !isSingle(code) && hasEvidence(code)).length;
   const portraitReady = !individual || !!portrait || stored.some(item => item.category === "portrait");
+  const mandatoryMissing = individual ? ([
+    !hasEvidence("C7") ? "C7: Kết quả rèn luyện" : null,
+    !hasEvidence("C8") ? "C8: Kết quả học tập" : null,
+    !disciplinaryCommitment ? "C9: Cam kết chấp hành quy định" : null,
+  ].filter((value): value is string => Boolean(value))) : [];
+  const mandatoryComplete = mandatoryMissing.length === 0;
   const requiredDone = individual
     ? Number(optionalCount > 0) + Number(hasEvidence("C7")) + Number(hasEvidence("C8")) + Number(disciplinaryCommitment) + Number(portraitReady)
     : codes.filter(hasEvidence).length;
@@ -409,7 +416,7 @@ export function CriterionEvidenceForm({
   const groups: { title: string; subtitle: string; codes: CriterionCode[]; number: string }[] = individual
     ? [
       { number: "A", title: "Thành tích & đóng góp cá nhân", subtitle: "Có thành tích ở tiêu chí nào, kê khai và nộp minh chứng ở tiêu chí đó; không yêu cầu đủ C1–C6.", codes: codes.filter(code => !isSingle(code)) },
-      { number: "B", title: "Điều kiện bắt buộc của cá nhân", subtitle: "C7, C8 nộp minh chứng; C9 tích cam kết chấp hành quy định.", codes: codes.filter(isSingle) },
+      { number: "B", title: "Điều kiện bắt buộc của cá nhân", subtitle: "BẮT BUỘC đủ 3/3: C7 và C8 mỗi tiêu chí 01 minh chứng; C9 phải tích cam kết. Thiếu bất kỳ mục nào sẽ không thể gửi hồ sơ.", codes: codes.filter(isSingle) },
     ]
     : [
       { number: "A", title: "Kết quả hoạt động tập thể", subtitle: "Bộ tiêu chí T1–T6 dành riêng cho Chi đoàn và CLB", codes },
@@ -469,7 +476,7 @@ export function CriterionEvidenceForm({
           </div>
         </div>
         {!app && (studentId || accountEmail) && <div className={styles.identity}><ShieldCheck size={16} /><span>{studentId ? `MSSV ${studentId} · ` : ""}{accountEmail}</span><Check size={16} /></div>}
-        {!app && individual && <p className={styles.profileNote}>Ngày sinh được tự động lấy từ tài khoản đã đăng ký, không cần nhập lại.</p>}
+        {individual && <p className={styles.profileNote}>Ngày sinh và thông tin Chi đoàn được lấy từ tài khoản đã đăng ký. <Link href="/account/profile" target="_blank" rel="noopener noreferrer" className={styles.profileLink}>Xem thông tin cá nhân của tôi <ArrowRight size={14} /></Link></p>}
         {individual && !app && <div className={styles.portrait}>
           <span className={styles.portraitIcon}><ImageIcon size={20} /></span>
           <div className={styles.portraitText}><strong>Ảnh chân dung <span>*</span></strong><small>JPG, PNG hoặc WebP · Tối đa 4 MB</small>{portrait && <span className={styles.portraitName}>{portrait.name}</span>}</div>
@@ -487,12 +494,13 @@ export function CriterionEvidenceForm({
         </div>
         <div className={styles.notice}><CircleHelp size={18} /><span><strong>Hướng dẫn:</strong> PDF, JPG, PNG, WebP (tối đa 4 MB/tệp; 60 MiB/hồ sơ). {individual ? "C1–C6 tự chọn các tiêu chí có thành tích (ít nhất một tiêu chí); C7–C8 bắt buộc 01 tệp/tiêu chí; C9 xác nhận bằng cam kết, không yêu cầu tải tệp." : "T1–T6 là bộ tiêu chí tập thể dự thảo, cần phê duyệt trước khi vận hành chính thức. Có thể khai nhiều nội dung và tệp; không dùng thành tích riêng của thành viên thay cho tập thể."}</span></div>
         {groups.map(group => (
-          <div className={styles.group} key={group.number}>
+          <div className={styles.group} key={group.number} id={group.number === "B" ? "mandatory-criteria" : undefined}>
             <div className={styles.groupHeading}>
               <span className={styles.groupIndex}>{group.number}</span>
               <div><h4>{group.title}</h4><p>{group.subtitle}</p></div>
-              <span className={styles.groupCount}>{group.number === "B" && individual ? Number(hasEvidence("C7")) + Number(hasEvidence("C8")) + Number(disciplinaryCommitment) : group.codes.filter(hasEvidence).length}/{group.codes.length} {group.number === "B" && individual ? "điều kiện hoàn thành" : "tiêu chí đã kê khai"}</span>
+              <span className={styles.groupCount} aria-live="polite">{group.number === "B" && individual ? Number(hasEvidence("C7")) + Number(hasEvidence("C8")) + Number(disciplinaryCommitment) : group.codes.filter(hasEvidence).length}/{group.codes.length} {group.number === "B" && individual ? "điều kiện bắt buộc" : "tiêu chí đã kê khai"}</span>
             </div>
+            {group.number === "B" && individual && <div className={mandatoryComplete ? styles.mandatoryOk : styles.mandatoryNotice} role="status"><ShieldCheck size={18} aria-hidden="true" /><span>{mandatoryComplete ? "Đã hoàn thành đủ 3/3 điều kiện bắt buộc C7–C9." : <>Cần hoàn thành đủ 3/3 điều kiện bắt buộc mới được gửi xét duyệt. <strong>Còn thiếu: {mandatoryMissing.join("; ")}.</strong></>}</span></div>}
             <div className={styles.tableScroll} role="region" tabIndex={0} aria-label={"Bảng kê " + group.title}>
               <table className={styles.evidenceTable}>
                 <caption className={styles.tableCaption}>Bảng tiêu chí, nội dung kê khai và tệp minh chứng thuộc {group.title}</caption>
@@ -511,17 +519,18 @@ export function CriterionEvidenceForm({
                   const currentEntries = entries.filter(entry => entry.criterion_code === criterion);
                   const unassigned = existing.filter(item => !item.evidence_entry_id);
                   const hasEvidence = total > 0;
+                  const satisfied = criterion === "C9" && individual ? disciplinaryCommitment : hasEvidence;
                   const canAdd = !busy && total < criterionFileLimit(criterion) && fileCount < 40 &&
                     criterion !== "C9" && (!isSingle(criterion) || currentEntries.length === 0);
-                  return <tr key={criterion} className={hasEvidence ? styles.rowReady : undefined}>
+                  return <tr key={criterion} className={satisfied ? styles.rowReady : undefined}>
                     <td className={styles.criterionCell}>
                       <div className={styles.criterionMeta}>
                         <span className={styles.criterionCode}>{displayCode}</span>
-                        <span className={`${styles.criterionState} ${hasEvidence ? styles.stateReady : ""}`}>
-                          {individual && criterion === "C9" ? (disciplinaryCommitment ? <><CheckCircle2 size={13} /> Đã cam kết</> : "Chưa cam kết") : hasEvidence ? <><CheckCircle2 size={13} /> Đã có minh chứng</> : "Chưa nộp (nếu có thành tích)"}
+                        <span className={`${styles.criterionState} ${satisfied ? styles.stateReady : ""}`}>
+                          {individual && criterion === "C9" ? (disciplinaryCommitment ? <><CheckCircle2 size={13} /> Đã cam kết</> : "Bắt buộc cam kết") : hasEvidence ? <><CheckCircle2 size={13} /> Đã có minh chứng</> : (individual && isSingle(criterion) ? "Bắt buộc nộp 01 tệp" : "Chưa nộp (nếu có thành tích)") }
                         </span>
                       </div>
-                      <strong>{definition.title}</strong>
+                      <strong>{definition.title}{individual && isSingle(criterion) && <span className={styles.requiredBadge} aria-label="Bắt buộc"> Bắt buộc *</span>}</strong>
                       <details className={styles.hintDetails}>
                         <summary><BookOpen size={14} /> Cách xét và minh chứng <ChevronDown size={14} /></summary>
                         <p>{definition.description}</p>
@@ -664,11 +673,11 @@ export function CriterionEvidenceForm({
       {previewFile && <LocalFilePreview file={previewFile} onClose={() => setPreviewFile(null)} />}
       <div className={styles.actionBar} id="submission-actions">
         <div className={styles.actionStatus}><span className={complete ? styles.readyIcon : styles.pendingIcon}>{complete ? <Check size={18} /> : <Info size={18} />}</span>
-          <div><strong>{complete ? "Đã đủ điều kiện gửi hồ sơ" : `Đã hoàn thiện ${ready}/${requiredTotal} điều kiện nộp` }</strong><small>{complete ? "Kiểm tra cam kết và minh chứng trước khi gửi hội đồng." : "Nhóm A chỉ cần nộp những tiêu chí bạn có thành tích; nhóm B là bắt buộc."}</small></div>
+          <div><strong>{complete ? "Đã đủ điều kiện gửi hồ sơ" : `Đã hoàn thiện ${ready}/${requiredTotal} điều kiện nộp` }</strong><small>{complete ? "Kiểm tra cam kết và minh chứng trước khi gửi hội đồng." : (mandatoryMissing.length ? `Bắt buộc bổ sung: ${mandatoryMissing.join("; ")}.` : "Nhóm A cần ít nhất 01 thành tích và 01 ảnh chân dung.")}</small>{mandatoryMissing.length > 0 && <a href="#mandatory-criteria" className={styles.profileLink}>Đi tới điều kiện bắt buộc <ArrowRight size={14} /></a>}</div>
         </div>
         <div className={styles.actionButtons}>
           <Button type="submit" variant="outline" disabled={busy} loading={busy && mode.current === "draft"} onClick={() => { mode.current = "draft"; }}><Save size={17} /> Lưu nháp</Button>
-          <Button type="submit" variant="primary" disabled={busy} loading={busy && mode.current === "submitted"} onClick={() => { mode.current = "submitted"; }}><span>Gửi hồ sơ xét duyệt</span> <ArrowRight size={17} /></Button>
+          <Button type="submit" variant="primary" disabled={busy || !complete} loading={busy && mode.current === "submitted"} onClick={() => { mode.current = "submitted"; }}><span>{complete ? "Gửi hồ sơ xét duyệt" : "Chưa đủ điều kiện nộp"}</span> <ArrowRight size={17} /></Button>
         </div>
       </div>
     </form>

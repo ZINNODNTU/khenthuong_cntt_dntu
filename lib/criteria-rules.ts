@@ -22,6 +22,11 @@ export function validateCriteria(
   const missing = expected.filter(code => !byCode.has(code));
   if (missing.length) issues.push(`Hồ sơ thiếu các tiêu chí ${missing.join(", ")}.`);
   if (rows.some(row => !expected.includes(row.code))) issues.push("Hồ sơ có mã tiêu chí không thuộc bộ tiêu chí được áp dụng.");
+  // C9 is mandatory both when submitting and when a reviewer approves.
+  // A missing / unchecked commitment must never pass the server boundary.
+  if (applicationType === "individual" && byCode.get("C9")?.boolean_value !== true) {
+    issues.push("C9: Chưa có cam kết chấp hành kỷ luật và quy chế Nhà trường.");
+  }
   if (phase === "pass") {
     const covered = OPTIONAL_INDIVIDUAL_CODES.filter(code => evidenceCategories.includes(`criterion_${code.toLowerCase()}`));
     if (applicationType === "individual" && covered.length === 0) {
@@ -30,9 +35,6 @@ export function validateCriteria(
     for (const code of reviewable) {
       if (applicationType === "individual" && OPTIONAL_INDIVIDUAL_CODES.includes(code) && !covered.includes(code)) continue;
       if (byCode.get(code)?.status !== "verified") issues.push(`${code}: Tiêu chí chưa được đánh giá Đạt.`);
-    }
-    if (applicationType === "individual" && byCode.get("C9")?.boolean_value !== true) {
-      issues.push("C9: Chưa có cam kết chấp hành kỷ luật và quy chế Nhà trường.");
     }
   }
   return issues;

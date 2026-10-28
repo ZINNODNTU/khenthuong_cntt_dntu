@@ -375,3 +375,21 @@
   .savingPulse { animation: none; }
 }
 :global([data-theme="dark"]) .error { color: #ffc1b0; background: #33232a; border-color: #603e46; }
+/* Required eligibility group: informational warning is always visible, not only on submit. */
+.mandatoryNotice, .mandatoryOk {
+  margin: 0 20px 16px; padding: 13px 16px; display: flex; align-items: flex-start; gap: 11px;
+  font-size: 13px; line-height: 1.6; border-radius: 8px; border: 1px solid #f1cfad;
+  background: #fff8ed; color: #78451e;
+}
+.mandatoryNotice svg, .mandatoryOk svg { flex-shrink: 0; margin-top: 1px; }
+.mandatoryOk { border-color: #bfe3cc; background: #eefaf3; color: #176039; }
+.requiredBadge { display: inline-block; margin-left: 7px; color: #b04729; font-weight: 700; font-size: 11px; white-space: nowrap; }
+.profileLink { display: inline-flex; align-items: center; gap: 5px; color: #1a537d; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.profileLink:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; border-radius: 3px; }
+:global([data-theme="dark"]) .mandatoryNotice { background: #34271e; border-color: #78563f; color: #ffd4a9; }
+:global([data-theme="dark"]) .mandatoryOk { background: #1a3227; border-color: #416a52; color: #b4f1c8; }
+:global([data-theme="dark"]) .requiredBadge { color: #ffb49c; }
+:global([data-theme="dark"]) .profileLink { color: #9cd0ff; }
+@media (max-width: 640px) {
+  .mandatoryNotice, .mandatoryOk { margin: 0 12px 12px; padding: 12px; }
+}

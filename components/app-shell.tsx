@@ -37,6 +37,9 @@ const adminGroups: NavGroup[] = [
     { href: "/admin/evidences", label: "Quản lý minh chứng", description: "Duyệt và xóa tệp", icon: FileImage },
   ]},
   // Nhóm 4 — Quản trị hệ thống
+  { label: "Tài khoản", items: [
+    { href: "/account/profile", label: "Thông tin cá nhân", description: "Xem hồ sơ tài khoản của tôi", icon: User },
+  ]},
   { label: "Quản trị hệ thống", items: [
     { href: "/admin/audit-log", label: "Nhật ký hoạt động", description: "Lịch sử thao tác hệ thống", icon: History },
     { href: "/settings", label: "Cấu hình hệ thống", description: "Kết nối và kho ảnh", icon: Settings },
@@ -44,6 +47,9 @@ const adminGroups: NavGroup[] = [
 ];
 
 const reviewerGroups: NavGroup[] = [
+  { label: "Tài khoản", items: [
+    { href: "/account/profile", label: "Thông tin cá nhân", description: "Xem hồ sơ tài khoản của tôi", icon: User },
+  ]},
   { label: "Xét duyệt", items: [
     { href: "/review", label: "Hồ sơ cần xét", description: "Danh sách đang chờ xử lý", icon: ClipboardCheck },
     { href: "/criteria", label: "Tiêu chí cá nhân C1–C9", description: "Căn cứ thẩm định từng tiêu chí", icon: ListChecks },
@@ -59,6 +65,9 @@ const submitterGroups: NavGroup[] = [
     { href: "/applications/new", label: "Nộp thành tích", description: "Tạo hồ sơ theo từng bước", icon: FilePlus2 },
     { href: "/criteria", label: "Tiêu chí cá nhân C1–C9", description: "Chuẩn bị minh chứng phù hợp", icon: ListChecks },
     { href: "/applications", label: "Hồ sơ của tôi", description: "Theo dõi trạng thái xử lý", icon: Files },
+  ]},
+  { label: "Tài khoản", items: [
+    { href: "/account/profile", label: "Thông tin cá nhân", description: "Xem họ tên, MSSV, email và Chi đoàn", icon: User },
   ]},
 ];
 

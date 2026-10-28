@@ -8,6 +8,12 @@ test("all nine criterion records must exist at submission", () => {
   assert.match(validateCriteria([], "individual", "submit").join(" "), /thiếu các tiêu chí/);
   assert.deepEqual(validateCriteria(rows(), "individual", "submit"), []);
 });
+test("submit requires C9 signed even if all other criteria records exist", () => {
+  const data = rows();
+  data[8].boolean_value = false;
+  assert.match(validateCriteria(data, "individual", "submit").join(" "), /C9.*cam kết/);
+  assert.deepEqual(validateCriteria(rows(), "individual", "submit"), []);
+});
 test("pass requires selected A criteria and all B criteria verified", () => {
   const data = rows();
   data[0].status = "pending";
