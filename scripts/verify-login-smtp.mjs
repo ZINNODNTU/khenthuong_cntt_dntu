@@ -15,6 +15,7 @@ const requiredFiles = [
   "components/login-screen.tsx",
   "app/auth/confirm/route.ts",
   "app/forgot-password/page.tsx",
+  "app/api/auth/email/route.ts",
   "app/reset-password/page.tsx",
   "components/reset-password-form.tsx",
   "supabase/email-templates/recovery.html",
@@ -119,7 +120,7 @@ const resetForm = readFileSync(
   resolve(process.cwd(), "components/reset-password-form.tsx"),
   "utf8",
 );
-if (!forgotPage.includes("resetPasswordForEmail") || !resetForm.includes("auth.updateUser")) {
+if (!forgotPage.includes('requestAuthEmail("recovery"') || !resetForm.includes("auth.updateUser")) {
   fail("Password recovery request/update flow is incomplete.");
 }
 

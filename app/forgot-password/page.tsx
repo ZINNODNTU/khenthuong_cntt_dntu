@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { ArrowLeft, ArrowRight, Mail } from "lucide-react";
 import { BrandLogo } from "@/components/brand-logo";
-import { createClient } from "@/lib/supabase/browser";
+import { requestAuthEmail } from "@/lib/auth-email-client";
 import { loginEmailFromInput } from "@/lib/identity";
 import styles from "@/components/password-recovery.module.css";
 
@@ -24,18 +24,9 @@ export default function ForgotPasswordPage() {
     setBusy(true);
     setError("");
     try {
-      const client = createClient();
-      const { error: resultError } = await client.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/finish?mode=recovery`,
-      });
-      if (resultError) {
-        // Never claim delivery when Supabase rejected the request, and never
-        // reveal whether an account exists for the submitted address.
-        const isRateLimited = resultError.status === 429 ||
-          /rate limit|too many|over_email_send_rate_limit/i.test(resultError.message);
-        setError(isRateLimited
-          ? "Hệ thống đang giới hạn số lần gửi email. Vui lòng chờ vài phút rồi thử lại."
-          : "Hệ thống chưa tiếp nhận được yêu cầu khôi phục. Dịch vụ email có thể đang gặp sự cố; vui lòng thử lại sau hoặc liên hệ quản trị.");
+      const result = await requestAuthEmail("recovery", email);
+      if (!result.ok) {
+        setError(result.message);
         return;
       }
       // HTTP success means the request was accepted, not that mail was

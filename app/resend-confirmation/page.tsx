@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { ArrowLeft, ArrowRight, MailCheck } from "lucide-react";
 import { BrandLogo } from "@/components/brand-logo";
-import { createClient } from "@/lib/supabase/browser";
+import { requestAuthEmail } from "@/lib/auth-email-client";
 import { loginEmailFromInput } from "@/lib/identity";
 import styles from "@/components/password-recovery.module.css";
 
@@ -24,17 +24,9 @@ export default function ResendConfirmationPage() {
     setBusy(true);
     setError("");
     try {
-      const client = createClient();
-      const { error: resultError } = await client.auth.resend({
-        type: "signup",
-        email,
-        options: { emailRedirectTo: `${window.location.origin}/auth/finish` },
-      });
-      if (resultError) {
-        const limited = resultError.status === 429 || /rate limit|too many|over_email_send_rate_limit/i.test(resultError.message);
-        setError(limited
-          ? "Hệ thống đang giới hạn số lần gửi thư. Vui lòng thử lại sau ít phút."
-          : "Chưa tiếp nhận được yêu cầu gửi lại thư. Vui lòng thử lại sau hoặc liên hệ quản trị.");
+      const result = await requestAuthEmail("signup", email);
+      if (!result.ok) {
+        setError(result.message);
         return;
       }
       // Accepted by Supabase does not prove that mail was delivered.
